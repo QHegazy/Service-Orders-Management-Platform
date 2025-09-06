@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: task-app
+data:
+  POSTGRES_DB: "task"
+  POSTGRES_USER: "task"
