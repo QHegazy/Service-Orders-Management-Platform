@@ -12,6 +12,8 @@ func tenantRoutes(r *gin.RouterGroup) {
 	tenant := r.Group("/tenant")
 	tenant.Use(middleware.ValidationErrorHandler())
 	tenant.Use(middleware.DBErrorHandler())
+	tenant.Use(middleware.AuthMiddleware())
+	tenant.Use(middleware.RoleMiddleware("Admin"))
 	tenantController := v1_controllers.NewTenantControllerV1()
 	tenant.POST("", tenantController.CreateTenant)
 	tenant.PUT("", tenantController.UpdateTenant)

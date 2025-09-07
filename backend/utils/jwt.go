@@ -63,12 +63,20 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 	}
 
 	if isBlackListed {
-		return nil, errors.New("token is expired")
+		return nil, errors.New("invalid token")
 	}
 	if !token.Valid {
 		return nil, errors.New("invalid token")
 	}
 
+	return claims, nil
+}
+func DecodeJwtClaims(tokenStr string) (*Claims, error) {
+	claims := &Claims{}
+	_, _, err := new(jwt.Parser).ParseUnverified(tokenStr, claims)
+	if err != nil {
+		return nil, err
+	}
 	return claims, nil
 }
 

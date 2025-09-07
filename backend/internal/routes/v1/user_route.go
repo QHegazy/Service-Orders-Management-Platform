@@ -15,7 +15,7 @@ func userRoutes(r *gin.RouterGroup) {
 	userController := v1_controllers.NewUserControllerV1()
 	user.POST("login", userController.LoginUser)
 	user.POST("", userController.CreateUser)
-	user.PUT("", userController.UpdateUser)
-	user.DELETE("", userController.DeleteUser)
+	user.PUT("", middleware.AuthMiddleware(), middleware.RoleMiddleware("Admin"), userController.UpdateUser)
+	user.DELETE("", middleware.AuthMiddleware(), middleware.RoleMiddleware("Admin"), userController.DeleteUser)
 
 }

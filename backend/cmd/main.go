@@ -55,12 +55,12 @@ func main() {
 	defer redis.Close()
 
 	server := &http.Server{
-		Addr:         ":8080",
-		Handler:      routes.RegisterRoutes(),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  15 * time.Second,
-		MaxHeaderBytes: 1 << 20, 
+		Addr:           ":8080",
+		Handler:        routes.RegisterRoutes(),
+		ReadTimeout:    5 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		IdleTimeout:    15 * time.Second,
+		MaxHeaderBytes: 1 << 20,
 	}
 
 	done := make(chan bool, 1)

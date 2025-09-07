@@ -56,8 +56,7 @@ func (s *UserService) LoginUser(ctx context.Context, loginUserDto dto.LoginDto) 
 	claims := utils.EntityData{
 		ID:       user.ID.String(),
 		Username: user.Username,
-		// Belong:   user.TenantID.String(),
-		Role: string(user.Role),
+		Role:     string(user.Role),
 	}
 	accessToken, err := utils.GenerateToken(
 		claims,
