@@ -273,14 +273,16 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 }
 
 type Customer struct {
-	ID        pgtype.UUID
-	LastName  string
-	FirstName string
-	Username  string
-	Email     pgtype.Text
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	DeletedAt pgtype.Timestamptz
+	ID         pgtype.UUID
+	LastName   string
+	FirstName  string
+	Username   string
+	Email      pgtype.Text
+	Password   string
+	IsVerified pgtype.Bool
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+	DeletedAt  pgtype.Timestamptz
 }
 
 type InvoiceInvoice struct {
@@ -309,11 +311,16 @@ type TenantTenant struct {
 	ID         pgtype.UUID
 	TenantName string
 	Domain     string
-	LogoUrl    pgtype.Text
+	Email      string
 	IsActive   pgtype.Bool
 	CreatedAt  pgtype.Timestamptz
 	UpdatedAt  pgtype.Timestamptz
 	DeletedAt  pgtype.Timestamptz
+}
+
+type TenantTenantUser struct {
+	TenantID pgtype.UUID
+	UserID   pgtype.UUID
 }
 
 type TicketComment struct {
@@ -342,7 +349,6 @@ type User struct {
 	ID         pgtype.UUID
 	Username   string
 	Email      string
-	TenantID   pgtype.UUID
 	Password   string
 	Role       UserRole
 	IsActive   pgtype.Bool

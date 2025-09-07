@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/internal/redis"
 	"backend/internal/repositories"
 	"backend/internal/routes"
 	"context"
@@ -49,12 +50,17 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 func main() {
 
 	repositories.InitDB()
+	redis.InitRedis()
 	defer repositories.Close()
+	defer redis.Close()
 
-	// Setup server
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: routes.RegisterRoutes(),
+		Addr:           ":8080",
+		Handler:        routes.RegisterRoutes(),
+		ReadTimeout:    5 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		IdleTimeout:    15 * time.Second,
+		MaxHeaderBytes: 1 << 20,
 	}
 
 	done := make(chan bool, 1)

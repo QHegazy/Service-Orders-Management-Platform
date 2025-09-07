@@ -16,11 +16,12 @@ INSERT INTO customers (
     last_name,
     first_name,
     username,
-    email
+    email,
+    password
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4,$5
 )
-RETURNING id, last_name, first_name, username, email, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, username, email, password, is_verified, created_at, updated_at, deleted_at
 `
 
 type CreateCustomerParams struct {
@@ -28,6 +29,7 @@ type CreateCustomerParams struct {
 	FirstName string
 	Username  string
 	Email     pgtype.Text
+	Password  string
 }
 
 func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error) {
@@ -36,6 +38,7 @@ func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) 
 		arg.FirstName,
 		arg.Username,
 		arg.Email,
+		arg.Password,
 	)
 	var i Customer
 	err := row.Scan(
@@ -44,6 +47,8 @@ func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) 
 		&i.FirstName,
 		&i.Username,
 		&i.Email,
+		&i.Password,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -52,7 +57,7 @@ func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) 
 }
 
 const getCustomerByEmail = `-- name: GetCustomerByEmail :one
-SELECT id, last_name, first_name, username, email, created_at, updated_at, deleted_at FROM customers
+SELECT id, last_name, first_name, username, email, password, is_verified, created_at, updated_at, deleted_at FROM customers
 WHERE email = $1 AND deleted_at IS NULL
 `
 
@@ -65,6 +70,8 @@ func (q *Queries) GetCustomerByEmail(ctx context.Context, email pgtype.Text) (Cu
 		&i.FirstName,
 		&i.Username,
 		&i.Email,
+		&i.Password,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -73,7 +80,7 @@ func (q *Queries) GetCustomerByEmail(ctx context.Context, email pgtype.Text) (Cu
 }
 
 const getCustomerByID = `-- name: GetCustomerByID :one
-SELECT id, last_name, first_name, username, email, created_at, updated_at, deleted_at FROM customers
+SELECT id, last_name, first_name, username, email, password, is_verified, created_at, updated_at, deleted_at FROM customers
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -86,6 +93,8 @@ func (q *Queries) GetCustomerByID(ctx context.Context, id pgtype.UUID) (Customer
 		&i.FirstName,
 		&i.Username,
 		&i.Email,
+		&i.Password,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -94,7 +103,7 @@ func (q *Queries) GetCustomerByID(ctx context.Context, id pgtype.UUID) (Customer
 }
 
 const getCustomerByUsername = `-- name: GetCustomerByUsername :one
-SELECT id, last_name, first_name, username, email, created_at, updated_at, deleted_at FROM customers
+SELECT id, last_name, first_name, username, email, password, is_verified, created_at, updated_at, deleted_at FROM customers
 WHERE username = $1 AND deleted_at IS NULL
 `
 
@@ -107,6 +116,8 @@ func (q *Queries) GetCustomerByUsername(ctx context.Context, username string) (C
 		&i.FirstName,
 		&i.Username,
 		&i.Email,
+		&i.Password,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -115,7 +126,7 @@ func (q *Queries) GetCustomerByUsername(ctx context.Context, username string) (C
 }
 
 const listAllCustomers = `-- name: ListAllCustomers :many
-SELECT id, last_name, first_name, username, email, created_at, updated_at, deleted_at FROM customers
+SELECT id, last_name, first_name, username, email, password, is_verified, created_at, updated_at, deleted_at FROM customers
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -140,6 +151,8 @@ func (q *Queries) ListAllCustomers(ctx context.Context, arg ListAllCustomersPara
 			&i.FirstName,
 			&i.Username,
 			&i.Email,
+			&i.Password,
+			&i.IsVerified,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -158,7 +171,7 @@ const restoreCustomer = `-- name: RestoreCustomer :one
 UPDATE customers
 SET deleted_at = NULL
 WHERE id = $1
-RETURNING id, last_name, first_name, username, email, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, username, email, password, is_verified, created_at, updated_at, deleted_at
 `
 
 func (q *Queries) RestoreCustomer(ctx context.Context, id pgtype.UUID) (Customer, error) {
@@ -170,6 +183,8 @@ func (q *Queries) RestoreCustomer(ctx context.Context, id pgtype.UUID) (Customer
 		&i.FirstName,
 		&i.Username,
 		&i.Email,
+		&i.Password,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -195,9 +210,10 @@ SET
     first_name = COALESCE($3, first_name),
     username = COALESCE($4, username),
     email = COALESCE($5, email),
+    password = COALESCE($6, password),
     updated_at = timezone('UTC', now())
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, last_name, first_name, username, email, created_at, updated_at, deleted_at
+RETURNING id, last_name, first_name, username, email, password, is_verified, created_at, updated_at, deleted_at
 `
 
 type UpdateCustomerParams struct {
@@ -206,6 +222,7 @@ type UpdateCustomerParams struct {
 	FirstName string
 	Username  string
 	Email     pgtype.Text
+	Password  string
 }
 
 func (q *Queries) UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) (Customer, error) {
@@ -215,6 +232,7 @@ func (q *Queries) UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) 
 		arg.FirstName,
 		arg.Username,
 		arg.Email,
+		arg.Password,
 	)
 	var i Customer
 	err := row.Scan(
@@ -223,6 +241,8 @@ func (q *Queries) UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) 
 		&i.FirstName,
 		&i.Username,
 		&i.Email,
+		&i.Password,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

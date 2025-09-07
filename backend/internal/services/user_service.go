@@ -34,11 +34,16 @@ func (s *UserService) CreateUser(ctx context.Context, userDto dto.CreateUserDto)
 		Email:    userDto.Email,
 		Role:     repositories.UserRole(userDto.Role),
 	}
+
 	_, err = s.queries.CreateUser(ctx, newUser)
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+
 	return err
 }
 
-func (s *UserService) LoginUser(ctx context.Context, loginUserDto dto.LoginUserDto) (string, string, error) {
+func (s *UserService) LoginUser(ctx context.Context, loginUserDto dto.LoginDto) (string, string, error) {
 	user, err := s.queries.GetUserByUsername(ctx, loginUserDto.Username)
 	if err != nil {
 		return "", "", fmt.Errorf("user not found: %w", err)
@@ -51,7 +56,6 @@ func (s *UserService) LoginUser(ctx context.Context, loginUserDto dto.LoginUserD
 	claims := utils.EntityData{
 		ID:       user.ID.String(),
 		Username: user.Username,
-		Belong:   user.TenantID.String(),
 		Role:     string(user.Role),
 	}
 	accessToken, err := utils.GenerateToken(
