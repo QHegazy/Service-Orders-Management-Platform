@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS customers (
     first_name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT timezone('UTC', now()),
     updated_at TIMESTAMPTZ DEFAULT timezone('UTC', now()),
     deleted_at TIMESTAMPTZ DEFAULT NULL

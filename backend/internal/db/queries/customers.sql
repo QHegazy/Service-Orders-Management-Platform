@@ -3,9 +3,10 @@ INSERT INTO customers (
     last_name,
     first_name,
     username,
-    email
+    email,
+    password
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4,$5
 )
 RETURNING *;
 
@@ -20,6 +21,7 @@ SET
     first_name = COALESCE($3, first_name),
     username = COALESCE($4, username),
     email = COALESCE($5, email),
+    password = COALESCE($6, password),
     updated_at = timezone('UTC', now())
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;

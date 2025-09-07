@@ -3,9 +3,10 @@ SELECT * FROM users
 WHERE id = $1
   AND deleted_at IS NULL;
 
+
 -- name: CreateUser :one
-INSERT INTO users (username, email, tenant_id, password, role)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO users (username, email, password, role)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: UpdateUser :one
@@ -28,43 +29,30 @@ SET deleted_at = timezone('UTC', now())
 WHERE id = $1
   AND deleted_at IS NULL;
 
+-- name: RestoreUser :one
+UPDATE users
+SET deleted_at = NULL
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteUser :exec
+DELETE FROM users
+WHERE id = $1;
+
 -- name: ListUsers :many
 SELECT * FROM users
-WHERE tenant_id = $1
-  AND deleted_at IS NULL
+WHERE deleted_at IS NULL
 ORDER BY created_at DESC
-LIMIT $2 OFFSET $3;
-
--- name: ListUsersByRole :many
-SELECT * FROM users
-WHERE tenant_id = $1
-  AND role = $2
-  AND deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4;
+LIMIT $1 OFFSET $2;
 
 -- name: ListAllUsers :many
 SELECT * FROM users
-WHERE tenant_id = $1
 ORDER BY created_at DESC
-LIMIT $2 OFFSET $3;
+LIMIT $1 OFFSET $2;
 
--- name: ListAllUsersByRole :many
+-- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE tenant_id = $1
-  AND role = $2
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4;
-
--- name: CountUsers :one
-SELECT COUNT(*) FROM users
-WHERE tenant_id = $1
-  AND deleted_at IS NULL;
-
--- name: CountUsersByRole :one
-SELECT COUNT(*) FROM users
-WHERE tenant_id = $1
-  AND role = $2
+WHERE email = $1
   AND deleted_at IS NULL;
 
 -- name: GetUserByUsername :one

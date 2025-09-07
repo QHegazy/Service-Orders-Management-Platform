@@ -12,8 +12,8 @@ import (
 )
 
 type UserControllerV1 interface {
-	LoginUser(c *gin.Context)
 	CreateUser(c *gin.Context)
+	LoginUser(c *gin.Context)
 	DeleteUser(c *gin.Context)
 	UpdateUser(c *gin.Context)
 }
@@ -22,9 +22,26 @@ type userControllerV1 struct {
 	userService *services.UserService
 }
 
+func (u *userControllerV1) CreateUser(c *gin.Context) {
+	ctx := context.Background()
+	userDto := dto.CreateUserDto{}
+
+	if err := c.ShouldBindJSON(&userDto); err != nil {
+		c.Error(err).SetType(gin.ErrorTypeBind)
+		return
+	}
+
+	if err := u.userService.CreateUser(ctx, userDto); err != nil {
+		c.Error(err).SetType(gin.ErrorTypeAny)
+		return
+	}
+
+	c.JSON(200, utils.SuccessResponse("success", "User Created"))
+}
+
 func (u *userControllerV1) LoginUser(c *gin.Context) {
 	ctx := context.Background()
-	var loginDto dto.LoginUserDto
+	var loginDto dto.LoginDto
 	if err := c.ShouldBindJSON(&loginDto); err != nil {
 		c.Error(err).SetType(gin.ErrorTypeBind)
 		return
@@ -59,23 +76,6 @@ func (u *userControllerV1) LoginUser(c *gin.Context) {
 	c.JSON(200, utils.SuccessResponse("success", gin.H{
 		"access_token": accessToken,
 	}))
-}
-
-func (u *userControllerV1) CreateUser(c *gin.Context) {
-	ctx := context.Background()
-	userDto := dto.CreateUserDto{}
-
-	if err := c.ShouldBindJSON(&userDto); err != nil {
-		c.Error(err).SetType(gin.ErrorTypeBind)
-		return
-	}
-
-	if err := u.userService.CreateUser(ctx, userDto); err != nil {
-		c.Error(err).SetType(gin.ErrorTypeAny)
-		return
-	}
-
-	c.JSON(200, utils.SuccessResponse("success", "User Created"))
 }
 
 func (u *userControllerV1) UpdateUser(c *gin.Context) {

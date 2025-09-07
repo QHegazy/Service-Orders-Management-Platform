@@ -11,4 +11,8 @@ func V1RoutesRegister(r *gin.Engine) {
 		c.String(200, "OK")
 	})
 	userRoutes(v1)
+
+	customerRoutes(v1)
+	ticketRoutes(v1)
+
 }

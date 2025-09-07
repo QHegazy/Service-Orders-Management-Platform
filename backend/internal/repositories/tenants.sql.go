@@ -16,7 +16,7 @@ UPDATE tenant.tenants
 SET is_active = TRUE,
     updated_at = timezone('UTC', now())
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at
+RETURNING id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at
 `
 
 func (q *Queries) ActivateTenant(ctx context.Context, id pgtype.UUID) (TenantTenant, error) {
@@ -26,46 +26,52 @@ func (q *Queries) ActivateTenant(ctx context.Context, id pgtype.UUID) (TenantTen
 		&i.ID,
 		&i.TenantName,
 		&i.Domain,
-		&i.LogoUrl,
+		&i.Email,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const addUserToTenant = `-- name: AddUserToTenant :exec
+INSERT INTO tenant.tenant_users (tenant_id, user_id)
+VALUES ($1, $2)
+`
+
+type AddUserToTenantParams struct {
+	TenantID pgtype.UUID
+	UserID   pgtype.UUID
+}
+
+func (q *Queries) AddUserToTenant(ctx context.Context, arg AddUserToTenantParams) error {
+	_, err := q.db.Exec(ctx, addUserToTenant, arg.TenantID, arg.UserID)
+	return err
 }
 
 const createTenant = `-- name: CreateTenant :one
 INSERT INTO tenant.tenants (
     tenant_name,
     domain,
-    logo_url
+    email
 ) VALUES (
     $1, $2, $3
 )
-RETURNING id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at
+RETURNING id
 `
 
 type CreateTenantParams struct {
 	TenantName string
 	Domain     string
-	LogoUrl    pgtype.Text
+	Email      string
 }
 
-func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) (TenantTenant, error) {
-	row := q.db.QueryRow(ctx, createTenant, arg.TenantName, arg.Domain, arg.LogoUrl)
-	var i TenantTenant
-	err := row.Scan(
-		&i.ID,
-		&i.TenantName,
-		&i.Domain,
-		&i.LogoUrl,
-		&i.IsActive,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-	)
-	return i, err
+func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, createTenant, arg.TenantName, arg.Domain, arg.Email)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deactivateTenant = `-- name: DeactivateTenant :one
@@ -73,7 +79,7 @@ UPDATE tenant.tenants
 SET is_active = FALSE,
     updated_at = timezone('UTC', now())
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at
+RETURNING id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at
 `
 
 func (q *Queries) DeactivateTenant(ctx context.Context, id pgtype.UUID) (TenantTenant, error) {
@@ -83,7 +89,7 @@ func (q *Queries) DeactivateTenant(ctx context.Context, id pgtype.UUID) (TenantT
 		&i.ID,
 		&i.TenantName,
 		&i.Domain,
-		&i.LogoUrl,
+		&i.Email,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -103,7 +109,7 @@ func (q *Queries) DeleteTenant(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getTenantByDomain = `-- name: GetTenantByDomain :one
-SELECT id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
+SELECT id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
 WHERE domain = $1 AND deleted_at IS NULL
 `
 
@@ -114,7 +120,7 @@ func (q *Queries) GetTenantByDomain(ctx context.Context, domain string) (TenantT
 		&i.ID,
 		&i.TenantName,
 		&i.Domain,
-		&i.LogoUrl,
+		&i.Email,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -124,7 +130,7 @@ func (q *Queries) GetTenantByDomain(ctx context.Context, domain string) (TenantT
 }
 
 const getTenantByID = `-- name: GetTenantByID :one
-SELECT id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
+SELECT id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -135,7 +141,7 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (TenantTena
 		&i.ID,
 		&i.TenantName,
 		&i.Domain,
-		&i.LogoUrl,
+		&i.Email,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -145,7 +151,7 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (TenantTena
 }
 
 const getTenantByName = `-- name: GetTenantByName :one
-SELECT id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
+SELECT id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
 WHERE tenant_name = $1 AND deleted_at IS NULL
 `
 
@@ -156,7 +162,7 @@ func (q *Queries) GetTenantByName(ctx context.Context, tenantName string) (Tenan
 		&i.ID,
 		&i.TenantName,
 		&i.Domain,
-		&i.LogoUrl,
+		&i.Email,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -166,7 +172,7 @@ func (q *Queries) GetTenantByName(ctx context.Context, tenantName string) (Tenan
 }
 
 const listAllTenants = `-- name: ListAllTenants :many
-SELECT id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
+SELECT id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -189,7 +195,7 @@ func (q *Queries) ListAllTenants(ctx context.Context, arg ListAllTenantsParams) 
 			&i.ID,
 			&i.TenantName,
 			&i.Domain,
-			&i.LogoUrl,
+			&i.Email,
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -206,7 +212,7 @@ func (q *Queries) ListAllTenants(ctx context.Context, arg ListAllTenantsParams) 
 }
 
 const listTenants = `-- name: ListTenants :many
-SELECT id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
+SELECT id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -230,7 +236,7 @@ func (q *Queries) ListTenants(ctx context.Context, arg ListTenantsParams) ([]Ten
 			&i.ID,
 			&i.TenantName,
 			&i.Domain,
-			&i.LogoUrl,
+			&i.Email,
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -246,11 +252,96 @@ func (q *Queries) ListTenants(ctx context.Context, arg ListTenantsParams) ([]Ten
 	return items, nil
 }
 
+const listUsersForTenant = `-- name: ListUsersForTenant :many
+SELECT
+    u.id,
+    u.username,
+    u.email,
+    u.role,
+    u.is_active,
+    u.is_verified,
+    u.created_at,
+    u.updated_at,
+    u.deleted_at
+FROM
+    users AS u
+JOIN
+    tenant.tenant_users AS tu ON u.id = tu.user_id
+WHERE
+    tu.tenant_id = $1
+ORDER BY
+    u.created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListUsersForTenantParams struct {
+	TenantID pgtype.UUID
+	Limit    int32
+	Offset   int32
+}
+
+type ListUsersForTenantRow struct {
+	ID         pgtype.UUID
+	Username   string
+	Email      string
+	Role       UserRole
+	IsActive   pgtype.Bool
+	IsVerified pgtype.Bool
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+	DeletedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) ListUsersForTenant(ctx context.Context, arg ListUsersForTenantParams) ([]ListUsersForTenantRow, error) {
+	rows, err := q.db.Query(ctx, listUsersForTenant, arg.TenantID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUsersForTenantRow
+	for rows.Next() {
+		var i ListUsersForTenantRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.Role,
+			&i.IsActive,
+			&i.IsVerified,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeUserFromTenant = `-- name: RemoveUserFromTenant :exec
+DELETE FROM tenant.tenant_users
+WHERE tenant_id = $1 AND user_id = $2
+`
+
+type RemoveUserFromTenantParams struct {
+	TenantID pgtype.UUID
+	UserID   pgtype.UUID
+}
+
+func (q *Queries) RemoveUserFromTenant(ctx context.Context, arg RemoveUserFromTenantParams) error {
+	_, err := q.db.Exec(ctx, removeUserFromTenant, arg.TenantID, arg.UserID)
+	return err
+}
+
 const restoreTenant = `-- name: RestoreTenant :one
 UPDATE tenant.tenants
 SET deleted_at = NULL
 WHERE id = $1
-RETURNING id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at
+RETURNING id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at
 `
 
 func (q *Queries) RestoreTenant(ctx context.Context, id pgtype.UUID) (TenantTenant, error) {
@@ -260,7 +351,7 @@ func (q *Queries) RestoreTenant(ctx context.Context, id pgtype.UUID) (TenantTena
 		&i.ID,
 		&i.TenantName,
 		&i.Domain,
-		&i.LogoUrl,
+		&i.Email,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -285,19 +376,19 @@ UPDATE tenant.tenants
 SET
     tenant_name = COALESCE($2, tenant_name),
     domain = COALESCE($3, domain),
-    logo_url = COALESCE($4, logo_url),
-    is_active = COALESCE($5, is_active),
+    is_active = COALESCE($4, is_active),
+    email = COALESCE($5, email),
     updated_at = timezone('UTC', now())
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, tenant_name, domain, logo_url, is_active, created_at, updated_at, deleted_at
+RETURNING id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at
 `
 
 type UpdateTenantParams struct {
 	ID         pgtype.UUID
 	TenantName string
 	Domain     string
-	LogoUrl    pgtype.Text
 	IsActive   pgtype.Bool
+	Email      string
 }
 
 func (q *Queries) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (TenantTenant, error) {
@@ -305,15 +396,15 @@ func (q *Queries) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (Ten
 		arg.ID,
 		arg.TenantName,
 		arg.Domain,
-		arg.LogoUrl,
 		arg.IsActive,
+		arg.Email,
 	)
 	var i TenantTenant
 	err := row.Scan(
 		&i.ID,
 		&i.TenantName,
 		&i.Domain,
-		&i.LogoUrl,
+		&i.Email,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,

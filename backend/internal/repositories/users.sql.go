@@ -17,7 +17,7 @@ SET is_active  = TRUE,
     updated_at = timezone('UTC', now())
 WHERE id = $1
   AND deleted_at IS NULL
-RETURNING id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at
+RETURNING id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at
 `
 
 func (q *Queries) ActivateUser(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -27,7 +27,6 @@ func (q *Queries) ActivateUser(ctx context.Context, id pgtype.UUID) (User, error
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.TenantID,
 		&i.Password,
 		&i.Role,
 		&i.IsActive,
@@ -45,7 +44,7 @@ SET password   = $2,
     updated_at = timezone('UTC', now())
 WHERE id = $1
   AND deleted_at IS NULL
-RETURNING id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at
+RETURNING id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at
 `
 
 type ChangeUserPasswordParams struct {
@@ -60,7 +59,6 @@ func (q *Queries) ChangeUserPassword(ctx context.Context, arg ChangeUserPassword
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.TenantID,
 		&i.Password,
 		&i.Role,
 		&i.IsActive,
@@ -72,48 +70,15 @@ func (q *Queries) ChangeUserPassword(ctx context.Context, arg ChangeUserPassword
 	return i, err
 }
 
-const countUsers = `-- name: CountUsers :one
-SELECT COUNT(*) FROM users
-WHERE tenant_id = $1
-  AND deleted_at IS NULL
-`
-
-func (q *Queries) CountUsers(ctx context.Context, tenantID pgtype.UUID) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsers, tenantID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const countUsersByRole = `-- name: CountUsersByRole :one
-SELECT COUNT(*) FROM users
-WHERE tenant_id = $1
-  AND role = $2
-  AND deleted_at IS NULL
-`
-
-type CountUsersByRoleParams struct {
-	TenantID pgtype.UUID
-	Role     UserRole
-}
-
-func (q *Queries) CountUsersByRole(ctx context.Context, arg CountUsersByRoleParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsersByRole, arg.TenantID, arg.Role)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (username, email, tenant_id, password, role)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at
+INSERT INTO users (username, email, password, role)
+VALUES ($1, $2, $3, $4)
+RETURNING id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
 	Username string
 	Email    string
-	TenantID pgtype.UUID
 	Password string
 	Role     UserRole
 }
@@ -122,7 +87,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	row := q.db.QueryRow(ctx, createUser,
 		arg.Username,
 		arg.Email,
-		arg.TenantID,
 		arg.Password,
 		arg.Role,
 	)
@@ -131,7 +95,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.TenantID,
 		&i.Password,
 		&i.Role,
 		&i.IsActive,
@@ -149,7 +112,7 @@ SET is_active  = FALSE,
     updated_at = timezone('UTC', now())
 WHERE id = $1
   AND deleted_at IS NULL
-RETURNING id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at
+RETURNING id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at
 `
 
 func (q *Queries) DeactivateUser(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -159,7 +122,40 @@ func (q *Queries) DeactivateUser(ctx context.Context, id pgtype.UUID) (User, err
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.TenantID,
+		&i.Password,
+		&i.Role,
+		&i.IsActive,
+		&i.IsVerified,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users
+WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUser, id)
+	return err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
+WHERE email = $1
+  AND deleted_at IS NULL
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
 		&i.Password,
 		&i.Role,
 		&i.IsActive,
@@ -172,7 +168,7 @@ func (q *Queries) DeactivateUser(ctx context.Context, id pgtype.UUID) (User, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
+SELECT id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
 WHERE id = $1
   AND deleted_at IS NULL
 `
@@ -184,7 +180,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.TenantID,
 		&i.Password,
 		&i.Role,
 		&i.IsActive,
@@ -197,7 +192,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
+SELECT id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
 WHERE username = $1
   AND deleted_at IS NULL
 `
@@ -209,7 +204,6 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.TenantID,
 		&i.Password,
 		&i.Role,
 		&i.IsActive,
@@ -222,20 +216,18 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-SELECT id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
-WHERE tenant_id = $1
+SELECT id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
 ORDER BY created_at DESC
-LIMIT $2 OFFSET $3
+LIMIT $1 OFFSET $2
 `
 
 type ListAllUsersParams struct {
-	TenantID pgtype.UUID
-	Limit    int32
-	Offset   int32
+	Limit  int32
+	Offset int32
 }
 
 func (q *Queries) ListAllUsers(ctx context.Context, arg ListAllUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, listAllUsers, arg.TenantID, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listAllUsers, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -247,59 +239,6 @@ func (q *Queries) ListAllUsers(ctx context.Context, arg ListAllUsersParams) ([]U
 			&i.ID,
 			&i.Username,
 			&i.Email,
-			&i.TenantID,
-			&i.Password,
-			&i.Role,
-			&i.IsActive,
-			&i.IsVerified,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listAllUsersByRole = `-- name: ListAllUsersByRole :many
-SELECT id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
-WHERE tenant_id = $1
-  AND role = $2
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4
-`
-
-type ListAllUsersByRoleParams struct {
-	TenantID pgtype.UUID
-	Role     UserRole
-	Limit    int32
-	Offset   int32
-}
-
-func (q *Queries) ListAllUsersByRole(ctx context.Context, arg ListAllUsersByRoleParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, listAllUsersByRole,
-		arg.TenantID,
-		arg.Role,
-		arg.Limit,
-		arg.Offset,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Username,
-			&i.Email,
-			&i.TenantID,
 			&i.Password,
 			&i.Role,
 			&i.IsActive,
@@ -319,21 +258,19 @@ func (q *Queries) ListAllUsersByRole(ctx context.Context, arg ListAllUsersByRole
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
-WHERE tenant_id = $1
-  AND deleted_at IS NULL
+SELECT id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
+WHERE deleted_at IS NULL
 ORDER BY created_at DESC
-LIMIT $2 OFFSET $3
+LIMIT $1 OFFSET $2
 `
 
 type ListUsersParams struct {
-	TenantID pgtype.UUID
-	Limit    int32
-	Offset   int32
+	Limit  int32
+	Offset int32
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsers, arg.TenantID, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +282,6 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.ID,
 			&i.Username,
 			&i.Email,
-			&i.TenantID,
 			&i.Password,
 			&i.Role,
 			&i.IsActive,
@@ -364,57 +300,29 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 	return items, nil
 }
 
-const listUsersByRole = `-- name: ListUsersByRole :many
-SELECT id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at FROM users
-WHERE tenant_id = $1
-  AND role = $2
-  AND deleted_at IS NULL
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4
+const restoreUser = `-- name: RestoreUser :one
+UPDATE users
+SET deleted_at = NULL
+WHERE id = $1
+RETURNING id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at
 `
 
-type ListUsersByRoleParams struct {
-	TenantID pgtype.UUID
-	Role     UserRole
-	Limit    int32
-	Offset   int32
-}
-
-func (q *Queries) ListUsersByRole(ctx context.Context, arg ListUsersByRoleParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsersByRole,
-		arg.TenantID,
-		arg.Role,
-		arg.Limit,
-		arg.Offset,
+func (q *Queries) RestoreUser(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, restoreUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.IsActive,
+		&i.IsVerified,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Username,
-			&i.Email,
-			&i.TenantID,
-			&i.Password,
-			&i.Role,
-			&i.IsActive,
-			&i.IsVerified,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+	return i, err
 }
 
 const softDeleteUser = `-- name: SoftDeleteUser :exec
@@ -441,7 +349,7 @@ SET
     updated_at  = timezone('UTC', now())
 WHERE id = $1
   AND deleted_at IS NULL
-RETURNING id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at
+RETURNING id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
@@ -469,7 +377,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.TenantID,
 		&i.Password,
 		&i.Role,
 		&i.IsActive,
@@ -487,7 +394,7 @@ SET is_verified = TRUE,
     updated_at  = timezone('UTC', now())
 WHERE id = $1
   AND deleted_at IS NULL
-RETURNING id, username, email, tenant_id, password, role, is_active, is_verified, created_at, updated_at, deleted_at
+RETURNING id, username, email, password, role, is_active, is_verified, created_at, updated_at, deleted_at
 `
 
 func (q *Queries) VerifyUser(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -497,7 +404,6 @@ func (q *Queries) VerifyUser(ctx context.Context, id pgtype.UUID) (User, error) 
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.TenantID,
 		&i.Password,
 		&i.Role,
 		&i.IsActive,
