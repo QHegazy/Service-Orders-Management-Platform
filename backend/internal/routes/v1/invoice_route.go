@@ -1,6 +1,7 @@
 package v1_routes
 
 import (
+	v1_controllers "backend/internal/controllers/v1"
 	"backend/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -11,8 +12,9 @@ func invoiceRoutes(r *gin.RouterGroup) {
 	invoice := r.Group("/invoice")
 	invoice.Use(middleware.ValidationErrorHandler())
 	invoice.Use(middleware.DBErrorHandler())
-	// invoiceController := v1_controllers.NewInvoiceControllerV1()
-	// invoice.POST("", invoiceController.CreateInvoice)
+
+	invoiceController := v1_controllers.NewInvoiceControllerV1()
+	invoice.POST("", invoiceController.CreateInvoice)
 	// invoice.PUT("", invoiceController.UpdateInvoice)
 	// invoice.DELETE("/:id", invoiceController.DeleteInvoice)
 	// invoice.GET("/:id", invoiceController.GetInvoiceByID)

@@ -25,11 +25,11 @@ RETURNING id, last_name, first_name, username, email, password, is_verified, cre
 `
 
 type CreateCustomerParams struct {
-	LastName  string
-	FirstName string
-	Username  string
-	Email     pgtype.Text
-	Password  string
+	LastName  string      `json:"last_name"`
+	FirstName string      `json:"first_name"`
+	Username  string      `json:"username"`
+	Email     pgtype.Text `json:"email"`
+	Password  string      `json:"password"`
 }
 
 func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error) {
@@ -54,6 +54,16 @@ func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) 
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const deleteCustomer = `-- name: DeleteCustomer :exec
+DELETE FROM customers
+WHERE id = $1
+`
+
+func (q *Queries) DeleteCustomer(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteCustomer, id)
+	return err
 }
 
 const getCustomerByEmail = `-- name: GetCustomerByEmail :one
@@ -125,6 +135,76 @@ func (q *Queries) GetCustomerByUsername(ctx context.Context, username string) (C
 	return i, err
 }
 
+const getListOfCustomerByUserId = `-- name: GetListOfCustomerByUserId :many
+SELECT
+    c.id,
+    c.last_name,
+    c.first_name,
+    c.username,
+    c.email,
+    c.created_at,
+    c.updated_at,
+    c.deleted_at
+FROM
+    customers AS c
+JOIN
+    ticket.tickets AS t ON c.id = t.customer_id
+JOIN
+    tenant.tenant_users AS tu ON t.tenant_id = tu.tenant_id
+    
+WHERE
+    tu.user_id = $1
+ORDER BY
+    c.created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetListOfCustomerByUserIdParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+}
+
+type GetListOfCustomerByUserIdRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	LastName  string             `json:"last_name"`
+	FirstName string             `json:"first_name"`
+	Username  string             `json:"username"`
+	Email     pgtype.Text        `json:"email"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+}
+
+func (q *Queries) GetListOfCustomerByUserId(ctx context.Context, arg GetListOfCustomerByUserIdParams) ([]GetListOfCustomerByUserIdRow, error) {
+	rows, err := q.db.Query(ctx, getListOfCustomerByUserId, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetListOfCustomerByUserIdRow{}
+	for rows.Next() {
+		var i GetListOfCustomerByUserIdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LastName,
+			&i.FirstName,
+			&i.Username,
+			&i.Email,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllCustomers = `-- name: ListAllCustomers :many
 SELECT id, last_name, first_name, username, email, password, is_verified, created_at, updated_at, deleted_at FROM customers
 ORDER BY created_at DESC
@@ -132,8 +212,8 @@ LIMIT $1 OFFSET $2
 `
 
 type ListAllCustomersParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListAllCustomers(ctx context.Context, arg ListAllCustomersParams) ([]Customer, error) {
@@ -142,7 +222,7 @@ func (q *Queries) ListAllCustomers(ctx context.Context, arg ListAllCustomersPara
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Customer
+	items := []Customer{}
 	for rows.Next() {
 		var i Customer
 		if err := rows.Scan(
@@ -217,12 +297,12 @@ RETURNING id, last_name, first_name, username, email, password, is_verified, cre
 `
 
 type UpdateCustomerParams struct {
-	ID        pgtype.UUID
-	LastName  string
-	FirstName string
-	Username  string
-	Email     pgtype.Text
-	Password  string
+	ID        pgtype.UUID `json:"id"`
+	LastName  string      `json:"last_name"`
+	FirstName string      `json:"first_name"`
+	Username  string      `json:"username"`
+	Email     pgtype.Text `json:"email"`
+	Password  string      `json:"password"`
 }
 
 func (q *Queries) UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) (Customer, error) {

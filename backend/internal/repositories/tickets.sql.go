@@ -14,29 +14,32 @@ import (
 const createComment = `-- name: CreateComment :one
 INSERT INTO ticket.comments (
     ticket_id,
+    author_type,
+    author_id,
     comment
 ) VALUES (
-    $1, $2
+    $1, $2, $3, $4
 )
-RETURNING id, ticket_id, comment, created_at, updated_at
+RETURNING id
 `
 
 type CreateCommentParams struct {
-	TicketID pgtype.UUID
-	Comment  string
+	TicketID   pgtype.UUID `json:"ticket_id"`
+	AuthorType string      `json:"author_type"`
+	AuthorID   pgtype.UUID `json:"author_id"`
+	Comment    string      `json:"comment"`
 }
 
-func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (TicketComment, error) {
-	row := q.db.QueryRow(ctx, createComment, arg.TicketID, arg.Comment)
-	var i TicketComment
-	err := row.Scan(
-		&i.ID,
-		&i.TicketID,
-		&i.Comment,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, createComment,
+		arg.TicketID,
+		arg.AuthorType,
+		arg.AuthorID,
+		arg.Comment,
 	)
-	return i, err
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const createTicket = `-- name: CreateTicket :one
@@ -51,20 +54,20 @@ INSERT INTO ticket.tickets (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7
 )
-RETURNING id, tenant_id, customer_id, assigned_to, title, description, status, priority, created_at, updated_at, closed_at
+RETURNING id
 `
 
 type CreateTicketParams struct {
-	TenantID    pgtype.UUID
-	CustomerID  pgtype.UUID
-	AssignedTo  pgtype.UUID
-	Title       string
-	Description pgtype.Text
-	Status      NullTicketTicketStatus
-	Priority    NullTicketTicketPriority
+	TenantID    pgtype.UUID `json:"tenant_id"`
+	CustomerID  pgtype.UUID `json:"customer_id"`
+	AssignedTo  pgtype.UUID `json:"assigned_to"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	Status      string      `json:"status"`
+	Priority    string      `json:"priority"`
 }
 
-func (q *Queries) CreateTicket(ctx context.Context, arg CreateTicketParams) (TicketTicket, error) {
+func (q *Queries) CreateTicket(ctx context.Context, arg CreateTicketParams) (pgtype.UUID, error) {
 	row := q.db.QueryRow(ctx, createTicket,
 		arg.TenantID,
 		arg.CustomerID,
@@ -74,21 +77,9 @@ func (q *Queries) CreateTicket(ctx context.Context, arg CreateTicketParams) (Tic
 		arg.Status,
 		arg.Priority,
 	)
-	var i TicketTicket
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.CustomerID,
-		&i.AssignedTo,
-		&i.Title,
-		&i.Description,
-		&i.Status,
-		&i.Priority,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ClosedAt,
-	)
-	return i, err
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deleteTicket = `-- name: DeleteTicket :exec
@@ -103,7 +94,7 @@ func (q *Queries) DeleteTicket(ctx context.Context, id pgtype.UUID) error {
 
 const getTicketByID = `-- name: GetTicketByID :one
 SELECT id, tenant_id, customer_id, assigned_to, title, description, status, priority, created_at, updated_at, closed_at FROM ticket.tickets
-WHERE id = $1 AND deleted_at IS NULL
+WHERE id = $1
 `
 
 func (q *Queries) GetTicketByID(ctx context.Context, id pgtype.UUID) (TicketTicket, error) {
@@ -126,33 +117,49 @@ func (q *Queries) GetTicketByID(ctx context.Context, id pgtype.UUID) (TicketTick
 }
 
 const listCommentsByTicketID = `-- name: ListCommentsByTicketID :many
-SELECT id, ticket_id, comment, created_at, updated_at FROM ticket.comments
-WHERE ticket_id = $1
-ORDER BY created_at DESC
+SELECT 
+    c.id, c.ticket_id, c.author_type, c.author_id, c.comment, c.created_at,
+    u.username
+FROM ticket.comments c
+LEFT JOIN users u ON c.user_id = u.id
+WHERE c.ticket_id = $1
+ORDER BY c.created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type ListCommentsByTicketIDParams struct {
-	TicketID pgtype.UUID
-	Limit    int32
-	Offset   int32
+	TicketID pgtype.UUID `json:"ticket_id"`
+	Limit    int32       `json:"limit"`
+	Offset   int32       `json:"offset"`
 }
 
-func (q *Queries) ListCommentsByTicketID(ctx context.Context, arg ListCommentsByTicketIDParams) ([]TicketComment, error) {
+type ListCommentsByTicketIDRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	TicketID   pgtype.UUID        `json:"ticket_id"`
+	AuthorType string             `json:"author_type"`
+	AuthorID   pgtype.UUID        `json:"author_id"`
+	Comment    string             `json:"comment"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	Username   pgtype.Text        `json:"username"`
+}
+
+func (q *Queries) ListCommentsByTicketID(ctx context.Context, arg ListCommentsByTicketIDParams) ([]ListCommentsByTicketIDRow, error) {
 	rows, err := q.db.Query(ctx, listCommentsByTicketID, arg.TicketID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TicketComment
+	items := []ListCommentsByTicketIDRow{}
 	for rows.Next() {
-		var i TicketComment
+		var i ListCommentsByTicketIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.TicketID,
+			&i.AuthorType,
+			&i.AuthorID,
 			&i.Comment,
 			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
@@ -172,9 +179,9 @@ LIMIT $2 OFFSET $3
 `
 
 type ListTicketsByAssignedToParams struct {
-	AssignedTo pgtype.UUID
-	Limit      int32
-	Offset     int32
+	AssignedTo pgtype.UUID `json:"assigned_to"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
 }
 
 func (q *Queries) ListTicketsByAssignedTo(ctx context.Context, arg ListTicketsByAssignedToParams) ([]TicketTicket, error) {
@@ -183,7 +190,7 @@ func (q *Queries) ListTicketsByAssignedTo(ctx context.Context, arg ListTicketsBy
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TicketTicket
+	items := []TicketTicket{}
 	for rows.Next() {
 		var i TicketTicket
 		if err := rows.Scan(
@@ -210,27 +217,127 @@ func (q *Queries) ListTicketsByAssignedTo(ctx context.Context, arg ListTicketsBy
 }
 
 const listTicketsByCustomerID = `-- name: ListTicketsByCustomerID :many
-SELECT id, tenant_id, customer_id, assigned_to, title, description, status, priority, created_at, updated_at, closed_at FROM ticket.tickets
-WHERE customer_id = $1 
-ORDER BY created_at DESC
+SELECT 
+    t.id,
+    t.tenant_id,
+    t.customer_id,
+    t.created_at,
+    t.closed_at,
+    t.status,
+    t.priority,
+    u.username AS assigned_username
+FROM ticket.tickets AS t
+JOIN users AS u ON t.assigned_to = u.id
+WHERE t.customer_id = $1
+ORDER BY t.created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type ListTicketsByCustomerIDParams struct {
-	CustomerID pgtype.UUID
-	Limit      int32
-	Offset     int32
+	CustomerID pgtype.UUID `json:"customer_id"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
 }
 
-func (q *Queries) ListTicketsByCustomerID(ctx context.Context, arg ListTicketsByCustomerIDParams) ([]TicketTicket, error) {
+type ListTicketsByCustomerIDRow struct {
+	ID               pgtype.UUID        `json:"id"`
+	TenantID         pgtype.UUID        `json:"tenant_id"`
+	CustomerID       pgtype.UUID        `json:"customer_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	ClosedAt         pgtype.Timestamptz `json:"closed_at"`
+	Status           string             `json:"status"`
+	Priority         string             `json:"priority"`
+	AssignedUsername string             `json:"assigned_username"`
+}
+
+func (q *Queries) ListTicketsByCustomerID(ctx context.Context, arg ListTicketsByCustomerIDParams) ([]ListTicketsByCustomerIDRow, error) {
 	rows, err := q.db.Query(ctx, listTicketsByCustomerID, arg.CustomerID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TicketTicket
+	items := []ListTicketsByCustomerIDRow{}
 	for rows.Next() {
-		var i TicketTicket
+		var i ListTicketsByCustomerIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.CustomerID,
+			&i.CreatedAt,
+			&i.ClosedAt,
+			&i.Status,
+			&i.Priority,
+			&i.AssignedUsername,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTicketsByCustomerId = `-- name: ListTicketsByCustomerId :many
+SELECT
+    t.id,
+    t.tenant_id,
+    t.customer_id,
+    t.assigned_to,
+    t.title,
+    t.description,
+    t.status,
+    t.priority,
+    t.created_at,
+    t.updated_at,
+    t.closed_at,
+    c.username AS customer_username,
+    u.username AS assigned_username
+FROM
+    ticket.tickets AS t
+LEFT JOIN
+    users AS u ON t.assigned_to = u.id
+LEFT JOIN
+    customers AS c ON t.customer_id = c.id
+WHERE
+    t.customer_id = $1
+ORDER BY
+    t.created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListTicketsByCustomerIdParams struct {
+	CustomerID pgtype.UUID `json:"customer_id"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
+}
+
+type ListTicketsByCustomerIdRow struct {
+	ID               pgtype.UUID        `json:"id"`
+	TenantID         pgtype.UUID        `json:"tenant_id"`
+	CustomerID       pgtype.UUID        `json:"customer_id"`
+	AssignedTo       pgtype.UUID        `json:"assigned_to"`
+	Title            string             `json:"title"`
+	Description      pgtype.Text        `json:"description"`
+	Status           string             `json:"status"`
+	Priority         string             `json:"priority"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	ClosedAt         pgtype.Timestamptz `json:"closed_at"`
+	CustomerUsername pgtype.Text        `json:"customer_username"`
+	AssignedUsername pgtype.Text        `json:"assigned_username"`
+}
+
+func (q *Queries) ListTicketsByCustomerId(ctx context.Context, arg ListTicketsByCustomerIdParams) ([]ListTicketsByCustomerIdRow, error) {
+	rows, err := q.db.Query(ctx, listTicketsByCustomerId, arg.CustomerID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTicketsByCustomerIdRow{}
+	for rows.Next() {
+		var i ListTicketsByCustomerIdRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -243,6 +350,8 @@ func (q *Queries) ListTicketsByCustomerID(ctx context.Context, arg ListTicketsBy
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ClosedAt,
+			&i.CustomerUsername,
+			&i.AssignedUsername,
 		); err != nil {
 			return nil, err
 		}
@@ -262,9 +371,9 @@ LIMIT $3
 `
 
 type ListTicketsByPriorityParams struct {
-	TenantID pgtype.UUID
-	Priority NullTicketTicketPriority
-	Limit    int32
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Priority string      `json:"priority"`
+	Limit    int32       `json:"limit"`
 }
 
 func (q *Queries) ListTicketsByPriority(ctx context.Context, arg ListTicketsByPriorityParams) ([]TicketTicket, error) {
@@ -273,7 +382,7 @@ func (q *Queries) ListTicketsByPriority(ctx context.Context, arg ListTicketsByPr
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TicketTicket
+	items := []TicketTicket{}
 	for rows.Next() {
 		var i TicketTicket
 		if err := rows.Scan(
@@ -307,9 +416,9 @@ LIMIT $3
 `
 
 type ListTicketsByStatusParams struct {
-	TenantID pgtype.UUID
-	Status   NullTicketTicketStatus
-	Limit    int32
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Status   string      `json:"status"`
+	Limit    int32       `json:"limit"`
 }
 
 func (q *Queries) ListTicketsByStatus(ctx context.Context, arg ListTicketsByStatusParams) ([]TicketTicket, error) {
@@ -318,7 +427,7 @@ func (q *Queries) ListTicketsByStatus(ctx context.Context, arg ListTicketsByStat
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TicketTicket
+	items := []TicketTicket{}
 	for rows.Next() {
 		var i TicketTicket
 		if err := rows.Scan(
@@ -352,9 +461,9 @@ LIMIT $2 OFFSET $3
 `
 
 type ListTicketsByTenantIDParams struct {
-	TenantID pgtype.UUID
-	Limit    int32
-	Offset   int32
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Limit    int32       `json:"limit"`
+	Offset   int32       `json:"offset"`
 }
 
 func (q *Queries) ListTicketsByTenantID(ctx context.Context, arg ListTicketsByTenantIDParams) ([]TicketTicket, error) {
@@ -363,7 +472,7 @@ func (q *Queries) ListTicketsByTenantID(ctx context.Context, arg ListTicketsByTe
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TicketTicket
+	items := []TicketTicket{}
 	for rows.Next() {
 		var i TicketTicket
 		if err := rows.Scan(
@@ -389,34 +498,69 @@ func (q *Queries) ListTicketsByTenantID(ctx context.Context, arg ListTicketsByTe
 	return items, nil
 }
 
-const listTicketsByTenantIDAndStatus = `-- name: ListTicketsByTenantIDAndStatus :many
-SELECT id, tenant_id, customer_id, assigned_to, title, description, status, priority, created_at, updated_at, closed_at FROM ticket.tickets
-WHERE tenant_id = $1 AND status = $2
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4
+const listTicketsByUserId = `-- name: ListTicketsByUserId :many
+SELECT
+    t.id,
+    t.tenant_id,
+    t.customer_id,
+    t.assigned_to,
+    t.title,
+    t.description,
+    t.status,
+    t.priority,
+    t.created_at,
+    t.updated_at,
+    t.closed_at,
+    c.first_name AS customer_first_name,
+    c.last_name AS customer_last_name,
+    u.username AS assigned_username
+FROM
+    ticket.tickets AS t
+JOIN
+    tenant.tenant_users AS tu ON t.tenant_id = tu.tenant_id
+LEFT JOIN
+    users AS u ON t.assigned_to = u.id
+JOIN  
+    customers AS c ON t.customer_id = c.id
+WHERE
+    tu.user_id = $1
+ORDER BY
+    t.created_at DESC
+LIMIT $2 OFFSET $3
 `
 
-type ListTicketsByTenantIDAndStatusParams struct {
-	TenantID pgtype.UUID
-	Status   NullTicketTicketStatus
-	Limit    int32
-	Offset   int32
+type ListTicketsByUserIdParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
 }
 
-func (q *Queries) ListTicketsByTenantIDAndStatus(ctx context.Context, arg ListTicketsByTenantIDAndStatusParams) ([]TicketTicket, error) {
-	rows, err := q.db.Query(ctx, listTicketsByTenantIDAndStatus,
-		arg.TenantID,
-		arg.Status,
-		arg.Limit,
-		arg.Offset,
-	)
+type ListTicketsByUserIdRow struct {
+	ID                pgtype.UUID        `json:"id"`
+	TenantID          pgtype.UUID        `json:"tenant_id"`
+	CustomerID        pgtype.UUID        `json:"customer_id"`
+	AssignedTo        pgtype.UUID        `json:"assigned_to"`
+	Title             string             `json:"title"`
+	Description       pgtype.Text        `json:"description"`
+	Status            string             `json:"status"`
+	Priority          string             `json:"priority"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	ClosedAt          pgtype.Timestamptz `json:"closed_at"`
+	CustomerFirstName string             `json:"customer_first_name"`
+	CustomerLastName  string             `json:"customer_last_name"`
+	AssignedUsername  pgtype.Text        `json:"assigned_username"`
+}
+
+func (q *Queries) ListTicketsByUserId(ctx context.Context, arg ListTicketsByUserIdParams) ([]ListTicketsByUserIdRow, error) {
+	rows, err := q.db.Query(ctx, listTicketsByUserId, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TicketTicket
+	items := []ListTicketsByUserIdRow{}
 	for rows.Next() {
-		var i TicketTicket
+		var i ListTicketsByUserIdRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -429,6 +573,9 @@ func (q *Queries) ListTicketsByTenantIDAndStatus(ctx context.Context, arg ListTi
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ClosedAt,
+			&i.CustomerFirstName,
+			&i.CustomerLastName,
+			&i.AssignedUsername,
 		); err != nil {
 			return nil, err
 		}
@@ -455,12 +602,12 @@ RETURNING id, tenant_id, customer_id, assigned_to, title, description, status, p
 `
 
 type UpdateTicketParams struct {
-	ID          pgtype.UUID
-	AssignedTo  pgtype.UUID
-	Title       string
-	Description pgtype.Text
-	Status      NullTicketTicketStatus
-	Priority    NullTicketTicketPriority
+	ID          pgtype.UUID `json:"id"`
+	AssignedTo  pgtype.UUID `json:"assigned_to"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	Status      string      `json:"status"`
+	Priority    string      `json:"priority"`
 }
 
 func (q *Queries) UpdateTicket(ctx context.Context, arg UpdateTicketParams) (TicketTicket, error) {

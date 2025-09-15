@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"fmt"
+	"log"
 	"regexp"
 	"strings"
 )
@@ -18,18 +18,13 @@ func IsBusinessEmail(email string) bool {
 	)
 
 	if freeEmailDomainsRegex.MatchString(domain) {
+		log.Printf("Email domain %s is a free email domain.\n", domain)
 		return false
 	}
-
 	// mxRecords, err := net.LookupMX(domain)
 	// if err != nil || len(mxRecords) == 0 {
 	// 	return false
 	// }
 
 	return true
-}
-
-func MockSendMail(to string, subject string, body string) error {
-	fmt.Printf("Mocking email send to %s with subject %s and body %s\n", to, subject, body)
-	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"backend/internal/services"
 	"backend/utils"
 	"context"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,8 @@ import (
 
 type UserControllerV1 interface {
 	CreateUser(c *gin.Context)
-	LoginUser(c *gin.Context)
+	CreateTechnicianUser(c *gin.Context)
+	GetTechnicians(c *gin.Context)
 	DeleteUser(c *gin.Context)
 	UpdateUser(c *gin.Context)
 }
@@ -31,7 +31,7 @@ func (u *userControllerV1) CreateUser(c *gin.Context) {
 		return
 	}
 
-	if err := u.userService.CreateUser(ctx, userDto); err != nil {
+	if err := u.userService.CreateUser(ctx, userDto, "Admin"); err != nil {
 		c.Error(err).SetType(gin.ErrorTypeAny)
 		return
 	}
@@ -39,51 +39,68 @@ func (u *userControllerV1) CreateUser(c *gin.Context) {
 	c.JSON(200, utils.SuccessResponse("success", "User Created"))
 }
 
-func (u *userControllerV1) LoginUser(c *gin.Context) {
+func (u *userControllerV1) CreateTechnicianUser(c *gin.Context) {
 	ctx := context.Background()
-	var loginDto dto.LoginDto
-	if err := c.ShouldBindJSON(&loginDto); err != nil {
+	userDto := dto.CreateUserDto{}
+
+	if err := c.ShouldBindJSON(&userDto); err != nil {
 		c.Error(err).SetType(gin.ErrorTypeBind)
 		return
 	}
 
-	accessToken, refreshToken, err := u.userService.LoginUser(ctx, loginDto)
-	if err != nil {
-		c.JSON(401, utils.ErrorResponse("error", "Invalid credentials"))
+	if err := u.userService.CreateUser(ctx, userDto, "Technician"); err != nil {
+		c.Error(err).SetType(gin.ErrorTypeAny)
 		return
 	}
 
-	c.SetCookie("token", refreshToken, 3600, "/", "localhost", false, true)
+	c.JSON(200, utils.SuccessResponse("success", "Tech User Created"))
+}
 
-	if gin.Mode() == gin.ReleaseMode {
-		domain := os.Getenv("DOMAIN")
-		if domain == "" {
-			domain = getDomain(c)
-		}
+func (u *userControllerV1) GetTechnicians(c *gin.Context) {
+	ctx := context.Background()
 
-		c.SetCookie(
-			"token",
-			refreshToken,
-			7*24*3600,
-			"/",
-			domain,
-			true,
-			true,
-		)
-
+	technicians, err := u.userService.GetTechnicians(ctx)
+	if err != nil {
+		c.Error(err).SetType(gin.ErrorTypeAny)
+		return
 	}
 
-	c.JSON(200, utils.SuccessResponse("success", gin.H{
-		"access_token": accessToken,
-	}))
+	c.JSON(200, utils.SuccessResponse("success", technicians))
 }
 
 func (u *userControllerV1) UpdateUser(c *gin.Context) {
-	c.String(200, "User Profile Updated")
+	ctx := context.Background()
+	userID := c.GetString("userID")
+
+	var updateDto dto.UpdateUserDto
+	if err := c.ShouldBindJSON(&updateDto); err != nil {
+		c.Error(err).SetType(gin.ErrorTypeBind)
+		return
+	}
+
+	if err := u.userService.UpdateUserProfile(ctx, userID, updateDto); err != nil {
+		c.Error(err).SetType(gin.ErrorTypeAny)
+		return
+	}
+
+	c.JSON(200, utils.SuccessResponse("success", "Profile updated successfully"))
 }
 
 func (u *userControllerV1) DeleteUser(c *gin.Context) {
-	c.String(200, "User Profile Deleted")
+	ctx := context.Background()
+	userID := c.Param("id")
+
+	if userID == "" {
+		c.JSON(400, utils.ErrorResponse("error", "User ID is required"))
+		return
+	}
+
+	if err := u.userService.DeleteUserByID(ctx, userID); err != nil {
+		c.Error(err).SetType(gin.ErrorTypeAny)
+		return
+	}
+
+	c.JSON(200, utils.SuccessResponse("success", "User deleted successfully"))
 }
 
 // 4. Factory function (optional)

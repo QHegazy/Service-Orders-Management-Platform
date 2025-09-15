@@ -1,70 +1,58 @@
 package v1_routes
 
 import (
-	"backend/utils"
-	"errors"
-	"fmt"
+	"io"
+	"os"
+	"time"
 
+	ws "backend/internal/controllers/v1/ws"
+	"backend/internal/redis"
+
+	ratelimit "github.com/JGLTechnologies/gin-rate-limit"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 func V1RoutesRegister(r *gin.Engine) {
-	v1 := r.Group("/v1")
-	v1.POST("/refresh", func(c *gin.Context) {
-		// 1️⃣ Get tokens
-		RefreshToken, _ := c.Cookie("token")
-		accessToken := c.GetHeader("Authorization")
-		if accessToken == "" || len(accessToken) <= 7 || accessToken[:7] != "Bearer " {
-			c.JSON(401, gin.H{"error": "Authorization header missing or invalid"})
-			return
-		}
-		accessToken = accessToken[7:]
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
-		decodedRefreshToken, err := utils.DecodeToken(RefreshToken)
-		if err != nil {
-			c.JSON(401, gin.H{"error": "Invalid refresh token"})
-			return
-		}
+	hub := ws.NewHub()
+	go hub.Run()
 
-		_, err = utils.ValidateToken(decodedRefreshToken)
-		if err != nil {
-			fmt.Println(err)
-			c.JSON(401, gin.H{"error": "Invalid token"})
-			return
-		}
-
-		_, err = utils.ValidateToken(accessToken)
-		if err != nil {
-			if errors.Is(err, jwt.ErrTokenExpired) {
-				claims, err := utils.DecodeJwtClaims(accessToken)
-				if err != nil {
-					c.JSON(401, gin.H{"error": "Invalid access token claims"})
-					return
-				}
-				newToken, err := utils.GenerateToken(utils.EntityData{
-					ID:       claims.Data.ID,
-					Username: claims.Data.Username,
-					Belong:   claims.Data.Belong,
-					Role:     claims.Data.Role,
-				}, 15, "access")
-				if err != nil {
-					c.JSON(500, gin.H{"error": "Failed to generate new access token"})
-					return
-				}
-				c.JSON(200, utils.SuccessResponse("success", gin.H{"access_token": newToken}))
-				return
-			}
-			c.JSON(401, gin.H{"error": "Invalid access token"})
-			return
-		}
+	store := ratelimit.RedisStore(&ratelimit.RedisOptions{
+		RedisClient: redis.Rdb,
+		Rate:        time.Minute,
+		Limit:       100,
 	})
+
+	r.Use(ratelimit.RateLimiter(store, &ratelimit.Options{
+		ErrorHandler: func(c *gin.Context, info ratelimit.Info) {
+			c.JSON(429, gin.H{"error": "Too many requests"})
+		},
+		KeyFunc: func(c *gin.Context) string {
+			return c.ClientIP()
+		},
+	}))
+	f, _ := os.Create("gin.log")
+	gin.DefaultWriter = io.MultiWriter(f)
+
+	r.Use(gin.LoggerWithWriter(f))
+
+	v1 := r.Group("/v1")
 	v1.GET("", func(c *gin.Context) {
 		c.String(200, "OK")
 	})
 	userRoutes(v1)
-
+	authRoutes(v1)
 	customerRoutes(v1)
-	ticketRoutes(v1)
+	tenantRoutes(v1)
+	ticketRoutes(v1, hub)
+	invoiceRoutes(v1)
 
 }

@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import userService from "@/services/userService";
+import { ErrorMessage, SuccessMessage } from "./messageForm";
 
 interface UserFormProps {
   setUserType: (userType: "business" | "customer" | null) => void;
 }
 
 export const UserForm = ({ setUserType }: UserFormProps) => {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{
+    text: string;
+    type: "error" | "success";
+  } | null>(null);
   const [businessFormData, setBusinessFormData] = useState({
     username: "",
     email: "",
@@ -23,9 +31,10 @@ export const UserForm = ({ setUserType }: UserFormProps) => {
   };
   const handleBusinessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage(null);
 
     if (businessFormData.password !== businessFormData.confirmPassword) {
-      alert("Passwords do not match");
+      setMessage({ text: "Passwords do not match", type: "error" });
       return;
     }
 
@@ -37,10 +46,27 @@ export const UserForm = ({ setUserType }: UserFormProps) => {
         email: businessFormData.email,
         password: businessFormData.password,
       };
-      console.log("Business signup attempt:", payload);
-      // Example: await createUser(payload);
+
+      console.log("Attempting signup with payload:", payload);
+      const response = await userService.signup(payload);
+      console.log("Business signup success:", response);
+
+      setMessage({
+        text: "Business account created successfully! Redirecting to login...",
+        type: "success",
+      });
+
+      // Redirect to login after showing success message
+      setTimeout(() => {
+        console.log("Redirecting to login...");
+        router.push("/login");
+      }, 1000);
     } catch (error) {
       console.error("Business signup error:", error);
+      setMessage({
+        text: "Failed to create business account. Please try again.",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +86,17 @@ export const UserForm = ({ setUserType }: UserFormProps) => {
             Create Business Account
           </h2>
         </div>
+
+        {message && (
+          <div className="mt-4">
+            {message.type === "error" ? (
+              <ErrorMessage message={message.text} />
+            ) : (
+              <SuccessMessage message={message.text} />
+            )}
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleBusinessSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>

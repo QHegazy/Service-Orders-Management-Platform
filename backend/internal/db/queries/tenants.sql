@@ -17,7 +17,7 @@ UPDATE tenant.tenants
 SET
     tenant_name = COALESCE($2, tenant_name),
     domain = COALESCE($3, domain),
-    is_active = COALESCE($4, is_active),
+    status = COALESCE($4, status),
     email = COALESCE($5, email),
     updated_at = timezone('UTC', now())
 WHERE id = $1 AND deleted_at IS NULL
@@ -102,3 +102,53 @@ WHERE
 ORDER BY
     u.created_at DESC
 LIMIT $2 OFFSET $3;
+
+-- name: GetTenantsByUserID :many
+SELECT
+    t.id,
+    t.tenant_name,
+    t.domain,
+    t.email,
+    t.is_active,
+    t.created_at,
+    t.updated_at,
+    t.deleted_at
+FROM
+    tenant.tenants AS t
+JOIN
+    tenant.tenant_users AS tu ON t.id = tu.tenant_id
+WHERE
+    tu.user_id = $1
+ORDER BY
+    t.created_at DESC
+LIMIT $2 OFFSET $3;
+
+
+-- name: GetTenantsByUserId :many
+SELECT
+    t.id,
+    t.tenant_name,
+    t.domain,
+    t.email,
+    t.is_active,
+    t.created_at,
+    t.updated_at,
+    t.deleted_at
+FROM
+    tenant.tenants AS t
+JOIN
+    tenant.tenant_users AS tu ON t.id = tu.tenant_id
+WHERE
+    tu.user_id = $1
+ORDER BY
+    t.created_at DESC;
+    
+-- name: GetTechnicianIDsFromTenantID :many
+SELECT
+    u.id
+FROM
+    public.users AS u
+JOIN
+    tenant.tenant_users AS tu ON u.id = tu.user_id
+WHERE
+    tu.tenant_id = $1 AND u.role = 'Technician';

@@ -14,10 +14,7 @@ func customerRoutes(r *gin.RouterGroup) {
 	customer.Use(middleware.DBErrorHandler())
 	customerController := v1_controllers.NewCustomerControllerV1()
 	customer.POST("", customerController.CreateCustomer)
-	customer.POST("/login",customerController.LoginCustomer)
-	customer.PUT("", middleware.RoleMiddleware("Customer"), customerController.UpdateCustomer)
-	customer.DELETE("", middleware.RoleMiddleware("Customer"), customerController.DeleteCustomer)
-	// customer.GET("/:id", customerController.GetCustomerByID)
-	// customer.GET("", customerController.ListAllCustomers)
+	customer.PUT("", middleware.AuthMiddleware(), middleware.RoleMiddleware("Customer"), customerController.UpdateCustomer)
+	customer.DELETE("", middleware.AuthMiddleware(), middleware.RoleMiddleware("Customer"), customerController.DeleteCustomer)
 
 }

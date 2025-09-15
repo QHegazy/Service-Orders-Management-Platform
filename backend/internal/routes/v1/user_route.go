@@ -13,9 +13,18 @@ func userRoutes(r *gin.RouterGroup) {
 	user.Use(middleware.ValidationErrorHandler())
 	user.Use(middleware.DBErrorHandler())
 	userController := v1_controllers.NewUserControllerV1()
-	user.POST("login", userController.LoginUser)
+
+	// Public routes
 	user.POST("", userController.CreateUser)
-	user.PUT("", middleware.AuthMiddleware(), middleware.RoleMiddleware("Admin"), userController.UpdateUser)
-	user.DELETE("", middleware.AuthMiddleware(), middleware.RoleMiddleware("Admin"), userController.DeleteUser)
+
+	authUser := user.Group("")
+	authUser.Use(middleware.AuthMiddleware())
+	authUser.Use(middleware.RoleMiddleware("Admin"))
+
+	// Admin only routes
+	user.POST("/technician", userController.CreateTechnicianUser)
+	user.GET("/technicians", userController.GetTechnicians)
+	user.PUT("", userController.UpdateUser)
+	user.DELETE("/:id", userController.DeleteUser)
 
 }

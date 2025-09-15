@@ -37,6 +37,9 @@ SET deleted_at = NULL
 WHERE id = $1
 RETURNING *;
 
+-- name: DeleteCustomer :exec
+DELETE FROM customers
+WHERE id = $1;
 
 -- name: ListAllCustomers :many
 SELECT * FROM customers
@@ -50,3 +53,26 @@ WHERE username = $1 AND deleted_at IS NULL;
 -- name: GetCustomerByEmail :one
 SELECT * FROM customers
 WHERE email = $1 AND deleted_at IS NULL;
+
+-- name: GetListOfCustomerByUserId :many 
+SELECT
+    c.id,
+    c.last_name,
+    c.first_name,
+    c.username,
+    c.email,
+    c.created_at,
+    c.updated_at,
+    c.deleted_at
+FROM
+    customers AS c
+JOIN
+    ticket.tickets AS t ON c.id = t.customer_id
+JOIN
+    tenant.tenant_users AS tu ON t.tenant_id = tu.tenant_id
+    
+WHERE
+    tu.user_id = $1
+ORDER BY
+    c.created_at DESC
+LIMIT $2 OFFSET $3;

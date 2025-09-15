@@ -24,11 +24,11 @@ CREATE TABLE ticket.tickets (
 CREATE TABLE ticket.comments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID NOT NULL REFERENCES ticket.tickets(id) ON DELETE CASCADE,
+    author_type VARCHAR(20) NOT NULL CHECK (author_type IN ('USER', 'CUSTOMER')),
+    author_id UUID NOT NULL,
     comment TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT timezone('UTC', now()),
-    updated_at TIMESTAMPTZ DEFAULT timezone('UTC', now())
+    created_at TIMESTAMPTZ DEFAULT timezone('UTC', now())
 );
-
 
 CREATE TRIGGER update_tickets_timestamp
 BEFORE UPDATE ON ticket.tickets

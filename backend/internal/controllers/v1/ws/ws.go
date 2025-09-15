@@ -1,117 +1,171 @@
 package ws
 
 import (
-	"backend/internal/redis"
+	"backend/internal/services"
 	"backend/utils"
+	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
-var (
-	upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-	connections = make(map[string]*websocket.Conn)
-	connMutex   sync.RWMutex
+const (
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 512
 )
 
-// setConnState sets connection state in Redis
-func setConnState(connID, field, value string) {
-	redis.Rdb.HSet(redis.Ctx, "ws:"+connID, field, value)
-	redis.Rdb.Expire(redis.Ctx, "ws:"+connID, time.Hour)
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
-// getConnState gets connection state from Redis
-func getConnState(connID, field string) string {
-	val, _ := redis.Rdb.HGet(redis.Ctx, "ws:"+connID, field).Result()
-	return val
+type Client struct {
+	hub      *Hub
+	conn     *websocket.Conn
+	send     chan *Message
+	room     string
+	userId   string
+	username string
+	userRole string
 }
 
-// isAuthenticated checks if connection is authenticated
-func isAuthenticated(connID string) bool {
-	return getConnState(connID, "auth") == "true"
+type Message struct {
+	Content   string `json:"content"`
+	Room      string `json:"room"`
+	Username  string `json:"username"`
+	UserRole  string `json:"userRole"`
+	CreatedAt string `json:"createdAt"`
 }
 
-func HandleWS(c *gin.Context) {
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to upgrade"})
-		return
-	}
-	defer conn.Close()
-
-	connID := uuid.New().String()
-
-	connMutex.Lock()
-	connections[connID] = conn
-	connMutex.Unlock()
-
+func (c *Client) readPump() {
 	defer func() {
-		connMutex.Lock()
-		delete(connections, connID)
-		connMutex.Unlock()
-		redis.Rdb.Del(redis.Ctx, "ws:"+connID)
+		c.hub.unregister <- c
+		c.conn.Close()
 	}()
-
-	conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"connectionId":"%s"}`, connID)))
-
+	c.conn.SetReadLimit(maxMessageSize)
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, msg, err := conn.ReadMessage()
+		_, message, err := c.conn.ReadMessage()
 		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("error: %v", err)
+			}
 			break
 		}
 
-		var data map[string]string
-		if err := json.Unmarshal(msg, &data); err != nil {
+		var msg Message
+		if err := json.Unmarshal(message, &msg); err != nil {
+			log.Printf("error unmarshalling message: %v", err)
 			continue
 		}
+		msg.Room = c.room
+		msg.Username = c.username
+		msg.UserRole = c.userRole
+		msg.CreatedAt = time.Now().Format(time.RFC3339)
 
-		switch data["type"] {
-		case "AUTH":
-			claims, err := utils.ValidateToken(data["token"])
+		// Save comment to DB
+		ticketService := services.NewTicketService()
+		_, err = ticketService.CreateComment(context.Background(), msg.Room, msg.Content, c.userId, msg.UserRole)
+		if err != nil {
+			log.Printf("failed to save comment: %v", err)
+		}
+
+		c.hub.broadcast <- &msg
+	}
+}
+
+func (c *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.conn.Close()
+	}()
+	for {
+		select {
+		case message, ok := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"unauthorized"}`))
-				continue
+				return
 			}
+			json.NewEncoder(w).Encode(message)
 
-			setConnState(connID, "auth", "true")
-			setConnState(connID, "userId", claims.ID)
-			conn.WriteMessage(websocket.TextMessage, []byte(`{"message":"authenticated"}`))
-
-		case "SUBSCRIBE_TICKET":
-			if !isAuthenticated(connID) {
-				conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"not authenticated"}`))
-				continue
+			if err := w.Close(); err != nil {
+				return
 			}
-
-			setConnState(connID, "ticketId", data["ticketId"])
-			conn.WriteMessage(websocket.TextMessage, []byte(`{"message":"subscribed"}`))
-
-		case "COMMENT":
-			if !isAuthenticated(connID) {
-				conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"not authenticated"}`))
-				continue
+		case <-ticker.C:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
 			}
-
-			ticketID := getConnState(connID, "ticketId")
-			if data["ticketId"] != ticketID {
-				conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"not subscribed"}`))
-				continue
-			}
-
-			userID := getConnState(connID, "userId")
-			reply := fmt.Sprintf(`{"ticketId":"%s","userId":"%s","comment":"%s"}`,
-				ticketID, userID, data["comment"])
-			conn.WriteMessage(websocket.TextMessage, []byte(reply))
 		}
 	}
+}
+
+func ServeWs(hub *Hub, c *gin.Context) {
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Println("WebSocket upgrade failed:", err)
+		return
+	}
+
+	// 1. Try to read from query param
+	tokenString := c.Query("token")
+
+	// 2. Fallback: check Authorization header
+	if tokenString == "" {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			log.Println("Authorization header not found")
+			conn.Close()
+			return
+		}
+
+		tokenParts := strings.Split(authHeader, " ")
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			log.Println("Invalid Authorization header format")
+			conn.Close()
+			return
+		}
+		tokenString = tokenParts[1]
+	}
+
+	// 3. Validate token
+	claims, err := utils.ValidateToken(tokenString)
+	if err != nil {
+		log.Println("Token invalid:", err)
+		conn.Close()
+		return
+	}
+
+	// 4. Register client
+	client := &Client{
+		hub:      hub,
+		conn:     conn,
+		send:     make(chan *Message, 256),
+		room:     c.Param("ticketId"),
+		userId:   claims.Data.ID,
+		username: claims.Data.Username,
+		userRole: claims.Data.Role,
+	}
+	client.hub.register <- client
+
+	go client.writePump()
+	go client.readPump()
 }

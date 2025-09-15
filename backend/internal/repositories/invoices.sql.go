@@ -25,11 +25,11 @@ RETURNING id, ticket_id, amount, currency, status, due_date, created_at, updated
 `
 
 type CreateInvoiceParams struct {
-	TicketID pgtype.UUID
-	Amount   pgtype.Numeric
-	Currency string
-	Status   NullInvoiceInvoiceStatus
-	DueDate  pgtype.Date
+	TicketID pgtype.UUID              `json:"ticket_id"`
+	Amount   pgtype.Numeric           `json:"amount"`
+	Currency string                   `json:"currency"`
+	Status   NullInvoiceInvoiceStatus `json:"status"`
+	DueDate  pgtype.Date              `json:"due_date"`
 }
 
 func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (InvoiceInvoice, error) {
@@ -68,11 +68,11 @@ RETURNING id, invoice_id, amount, payment_date, method, status, created_at, upda
 `
 
 type CreatePaymentParams struct {
-	InvoiceID   pgtype.UUID
-	Amount      pgtype.Numeric
-	PaymentDate pgtype.Timestamptz
-	Method      NullInvoicePaymentMethod
-	Status      NullInvoicePaymentStatus
+	InvoiceID   pgtype.UUID              `json:"invoice_id"`
+	Amount      pgtype.Numeric           `json:"amount"`
+	PaymentDate pgtype.Timestamptz       `json:"payment_date"`
+	Method      NullInvoicePaymentMethod `json:"method"`
+	Status      NullInvoicePaymentStatus `json:"status"`
 }
 
 func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (InvoicePayment, error) {
@@ -158,8 +158,8 @@ OFFSET $2
 `
 
 type ListAllInvoicesParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListAllInvoices(ctx context.Context, arg ListAllInvoicesParams) ([]InvoiceInvoice, error) {
@@ -168,7 +168,7 @@ func (q *Queries) ListAllInvoices(ctx context.Context, arg ListAllInvoicesParams
 		return nil, err
 	}
 	defer rows.Close()
-	var items []InvoiceInvoice
+	items := []InvoiceInvoice{}
 	for rows.Next() {
 		var i InvoiceInvoice
 		if err := rows.Scan(
@@ -198,8 +198,8 @@ LIMIT $1 OFFSET $2
 `
 
 type ListAllPaymentsParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListAllPayments(ctx context.Context, arg ListAllPaymentsParams) ([]InvoicePayment, error) {
@@ -208,7 +208,7 @@ func (q *Queries) ListAllPayments(ctx context.Context, arg ListAllPaymentsParams
 		return nil, err
 	}
 	defer rows.Close()
-	var items []InvoicePayment
+	items := []InvoicePayment{}
 	for rows.Next() {
 		var i InvoicePayment
 		if err := rows.Scan(
@@ -246,21 +246,21 @@ LIMIT $3
 `
 
 type ListInvoicesByTenantIDParams struct {
-	TenantID pgtype.UUID
-	Offset   int32
-	Limit    int32
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Offset   int32       `json:"offset"`
+	Limit    int32       `json:"limit"`
 }
 
 type ListInvoicesByTenantIDRow struct {
-	ID        pgtype.UUID
-	TicketID  pgtype.UUID
-	Amount    pgtype.Numeric
-	Currency  string
-	Status    NullInvoiceInvoiceStatus
-	DueDate   pgtype.Date
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	Title     string
+	ID        pgtype.UUID              `json:"id"`
+	TicketID  pgtype.UUID              `json:"ticket_id"`
+	Amount    pgtype.Numeric           `json:"amount"`
+	Currency  string                   `json:"currency"`
+	Status    NullInvoiceInvoiceStatus `json:"status"`
+	DueDate   pgtype.Date              `json:"due_date"`
+	CreatedAt pgtype.Timestamptz       `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz       `json:"updated_at"`
+	Title     string                   `json:"title"`
 }
 
 func (q *Queries) ListInvoicesByTenantID(ctx context.Context, arg ListInvoicesByTenantIDParams) ([]ListInvoicesByTenantIDRow, error) {
@@ -269,7 +269,7 @@ func (q *Queries) ListInvoicesByTenantID(ctx context.Context, arg ListInvoicesBy
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListInvoicesByTenantIDRow
+	items := []ListInvoicesByTenantIDRow{}
 	for rows.Next() {
 		var i ListInvoicesByTenantIDRow
 		if err := rows.Scan(
@@ -302,9 +302,9 @@ OFFSET $3
 `
 
 type ListPaymentsByInvoiceIDParams struct {
-	InvoiceID pgtype.UUID
-	Limit     int32
-	Offset    int32
+	InvoiceID pgtype.UUID `json:"invoice_id"`
+	Limit     int32       `json:"limit"`
+	Offset    int32       `json:"offset"`
 }
 
 func (q *Queries) ListPaymentsByInvoiceID(ctx context.Context, arg ListPaymentsByInvoiceIDParams) ([]InvoicePayment, error) {
@@ -313,7 +313,7 @@ func (q *Queries) ListPaymentsByInvoiceID(ctx context.Context, arg ListPaymentsB
 		return nil, err
 	}
 	defer rows.Close()
-	var items []InvoicePayment
+	items := []InvoicePayment{}
 	for rows.Next() {
 		var i InvoicePayment
 		if err := rows.Scan(
@@ -384,12 +384,12 @@ RETURNING id, ticket_id, amount, currency, status, due_date, created_at, updated
 `
 
 type UpdateInvoiceParams struct {
-	ID       pgtype.UUID
-	TicketID pgtype.UUID
-	Amount   pgtype.Numeric
-	Currency string
-	DueDate  pgtype.Date
-	Status   NullInvoiceInvoiceStatus
+	ID       pgtype.UUID              `json:"id"`
+	TicketID pgtype.UUID              `json:"ticket_id"`
+	Amount   pgtype.Numeric           `json:"amount"`
+	Currency string                   `json:"currency"`
+	DueDate  pgtype.Date              `json:"due_date"`
+	Status   NullInvoiceInvoiceStatus `json:"status"`
 }
 
 func (q *Queries) UpdateInvoice(ctx context.Context, arg UpdateInvoiceParams) (InvoiceInvoice, error) {

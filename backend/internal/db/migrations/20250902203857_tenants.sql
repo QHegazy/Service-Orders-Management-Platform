@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS tenant.tenants (
     tenant_name VARCHAR(100) UNIQUE NOT NULL,
     domain VARCHAR(100) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    is_active BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT timezone('UTC', now()),
     updated_at TIMESTAMPTZ DEFAULT timezone('UTC', now()),
     deleted_at TIMESTAMPTZ DEFAULT NULL
