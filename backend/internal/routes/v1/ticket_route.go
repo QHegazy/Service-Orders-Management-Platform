@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ticketRoutes(r *gin.RouterGroup) {
+func ticketRoutes(r *gin.RouterGroup, hub *ws.Hub) {
 
 	ticket := r.Group("/ticket")
 	ticket.Use(middleware.ValidationErrorHandler())
@@ -18,7 +18,12 @@ func ticketRoutes(r *gin.RouterGroup) {
 	ticket.POST("", middleware.RoleMiddleware("Customer"), ticketController.CreateTicket)
 	ticket.PUT("/:id", middleware.RoleMiddleware("Admin"), ticketController.UpdateTicket)
 	ticket.DELETE("/:id", middleware.RoleMiddleware("Admin"), ticketController.DeleteTicket)
-	ticket.GET("/connect", ws.HandleWS)
-	// ticket.GET("", ticketController.ListTickets)
-	// ticket.GET("/comments/:id", ticketController.ListCommentsByTicketID)
+	ticket.GET("/user", middleware.PaginationMiddleware(), middleware.RoleMiddleware("Admin", "Technician"), ticketController.ListTicketsByUserId)
+	ticket.GET("/:id", ticketController.GetTicket)
+	ticket.GET("/:id/comments", ticketController.ListCommentsByTicketID)
+	ticket.GET("/customer", middleware.PaginationMiddleware(), middleware.RoleMiddleware("Customer"), ticketController.ListTicketsByCustomerId)
+
+	r.GET("/ws/ticket/:ticketId", func(c *gin.Context) {
+		ws.ServeWs(hub, c)
+	})
 }

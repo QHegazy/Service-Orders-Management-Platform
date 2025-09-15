@@ -6,6 +6,7 @@ import (
 	"backend/utils"
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -41,26 +42,31 @@ func (s *CustomerService) CreateCustomer(ctx context.Context, customerDto dto.Cr
 }
 
 func (s *CustomerService) LoginCustomer(ctx context.Context, loginCustomerDto dto.LoginDto) (string, string, error) {
-	customer, err := s.queries.GetCustomerByUsername(ctx, loginCustomerDto.Username)
+
+	customer, err := s.queries.GetCustomerByEmail(ctx, pgtype.Text{String: loginCustomerDto.Email, Valid: true})
 	if err != nil {
+		log.Printf("CustomerService - Customer not found for email %s: %v", loginCustomerDto.Email, err)
 		return "", "", fmt.Errorf("customer not found: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(loginCustomerDto.Password))
 	if err != nil {
+		log.Printf("CustomerService - Password verification failed for %s: %v", loginCustomerDto.Email, err)
 		return "", "", fmt.Errorf("invalid password: %w", err)
 	}
 	claims := utils.EntityData{
 		ID:       customer.ID.String(),
 		Username: customer.Username,
-		Role:     "customer",
+		Role:     "Customer",
 	}
+
 	accessToken, err := utils.GenerateToken(
 		claims,
-		time.Minute*15,
+		time.Minute*60,
 		"access",
 	)
 	if err != nil {
+		log.Printf("CustomerService - Failed to generate access token for %s: %v", loginCustomerDto.Email, err)
 		return "", "", fmt.Errorf("failed to generate access token: %w", err)
 	}
 
@@ -72,6 +78,7 @@ func (s *CustomerService) LoginCustomer(ctx context.Context, loginCustomerDto dt
 	encodedRefreshToken, _ := utils.EncodeToken(refreshToken)
 
 	if err != nil {
+		log.Printf("CustomerService - Failed to generate refresh token for %s: %v", loginCustomerDto.Email, err)
 		return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 

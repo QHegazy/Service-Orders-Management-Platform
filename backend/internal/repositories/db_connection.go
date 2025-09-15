@@ -19,11 +19,13 @@ var (
 func InitDB() *Queries {
 
 	once.Do(func() {
+		log.Printf("InitDB - Starting database initialization")
 		connString := os.Getenv("DB_URL")
 		if connString == "" {
 			log.Fatal("DB_URL environment variable is not set")
 		}
 
+		log.Printf("InitDB - Parsing database configuration")
 		config, err := pgxpool.ParseConfig(connString)
 		if err != nil {
 			log.Fatal("Unable to parse config:", err)
@@ -34,11 +36,13 @@ func InitDB() *Queries {
 		config.MaxConnLifetime = 1 * time.Hour
 		config.HealthCheckPeriod = 2 * time.Minute
 
+		log.Printf("InitDB - Creating connection pool with MaxConns: %d, MinConns: %d", config.MaxConns, config.MinConns)
 		dbPool, err = pgxpool.NewWithConfig(context.Background(), config)
 		if err != nil {
 			log.Fatal("Unable to connect to database:", err)
 		}
 
+		log.Printf("InitDB - Testing database connection")
 		if err := dbPool.Ping(context.Background()); err != nil {
 			log.Fatal("Unable to ping database:", err)
 		}

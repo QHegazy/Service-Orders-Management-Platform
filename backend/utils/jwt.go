@@ -4,6 +4,7 @@ import (
 	"backend/internal/redis"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -14,15 +15,14 @@ import (
 var jwtKey = []byte(getEnv("JWT_SECRET", "my_secret_key"))
 
 type EntityData struct {
-	ID       string `json:"id"`
-	Username string `json:"username,omitempty"`
-	Belong   string `json:"belong,omitempty"`
-	Role     string `json:"role,omitempty"`
+	ID       string   `json:"id"`
+	Username string   `json:"username,omitempty"`
+	Belong   []string `json:"belong,omitempty"`
+	Role     string   `json:"role,omitempty"`
 }
 
 type Claims struct {
 	Data EntityData
-
 	jwt.RegisteredClaims
 }
 
@@ -71,6 +71,7 @@ func ValidateToken(tokenStr string) (*Claims, error) {
 
 	return claims, nil
 }
+
 func DecodeJwtClaims(tokenStr string) (*Claims, error) {
 	claims := &Claims{}
 	_, _, err := new(jwt.Parser).ParseUnverified(tokenStr, claims)
@@ -81,11 +82,14 @@ func DecodeJwtClaims(tokenStr string) (*Claims, error) {
 }
 
 func AddBlackListToken(token string, minutes int64) error {
+	log.Printf("JWT - Adding token to blacklist for %d minutes", minutes)
 	ctx := redis.Ctx
 	err := redis.Rdb.Set(ctx, token, "blacklisted", time.Duration(minutes)*time.Minute).Err()
 	if err != nil {
+		log.Printf("JWT - Failed to blacklist token: %v", err)
 		return fmt.Errorf("failed to blacklist token: %w", err)
 	}
+	log.Printf("JWT - Token successfully added to blacklist")
 	return nil
 }
 

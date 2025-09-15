@@ -16,3 +16,10 @@ type UpdateTicketDto struct {
 	Status      string `json:"status" binding:"omitempty,oneof=OPEN IN_PROGRESS RESOLVED CLOSED REOPENED"`
 	Priority    string `json:"priority" binding:"omitempty,oneof=LOW MEDIUM HIGH URGENT CRITICAL"`
 }
+
+type TicketCommentDto struct {
+	TicketID   string `json:"ticket_id" binding:"required,uuid"`
+	AuthorID   string `json:"user_id" binding:"required,uuid"`
+	AuthorType string `json:"author_type" binding:"required,oneof=User Customer"`
+	Comment    string `json:"comment" binding:"required,min=1,max=1000"`
+}

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"backend/utils"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,11 +23,10 @@ func DBErrorHandler() gin.HandlerFunc {
 			status, payload := utils.ParseDBError(e.Err)
 			if status >= 400 {
 				c.AbortWithStatusJSON(status, utils.ErrorResponse("error", payload))
+				log.Printf("Database error: %v\n", e.Err)
 				return
 			}
 		}
-
-		// If here, there were errors but none matched DB parsing -> generic 500
 		c.AbortWithStatusJSON(http.StatusInternalServerError, utils.ErrorResponse("error", "internal server error"))
 	}
 }

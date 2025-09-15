@@ -41,8 +41,8 @@ VALUES ($1, $2)
 `
 
 type AddUserToTenantParams struct {
-	TenantID pgtype.UUID
-	UserID   pgtype.UUID
+	TenantID pgtype.UUID `json:"tenant_id"`
+	UserID   pgtype.UUID `json:"user_id"`
 }
 
 func (q *Queries) AddUserToTenant(ctx context.Context, arg AddUserToTenantParams) error {
@@ -62,9 +62,9 @@ RETURNING id
 `
 
 type CreateTenantParams struct {
-	TenantName string
-	Domain     string
-	Email      string
+	TenantName string `json:"tenant_name"`
+	Domain     string `json:"domain"`
+	Email      string `json:"email"`
 }
 
 func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) (pgtype.UUID, error) {
@@ -106,6 +106,37 @@ WHERE id = $1
 func (q *Queries) DeleteTenant(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteTenant, id)
 	return err
+}
+
+const getTechnicianIDsFromTenantID = `-- name: GetTechnicianIDsFromTenantID :many
+SELECT
+    u.id
+FROM
+    public.users AS u
+JOIN
+    tenant.tenant_users AS tu ON u.id = tu.user_id
+WHERE
+    tu.tenant_id = $1 AND u.role = 'Technician'
+`
+
+func (q *Queries) GetTechnicianIDsFromTenantID(ctx context.Context, tenantID pgtype.UUID) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, getTechnicianIDsFromTenantID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []pgtype.UUID{}
+	for rows.Next() {
+		var id pgtype.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getTenantByDomain = `-- name: GetTenantByDomain :one
@@ -171,6 +202,111 @@ func (q *Queries) GetTenantByName(ctx context.Context, tenantName string) (Tenan
 	return i, err
 }
 
+const getTenantsByUserID = `-- name: GetTenantsByUserID :many
+SELECT
+    t.id,
+    t.tenant_name,
+    t.domain,
+    t.email,
+    t.is_active,
+    t.created_at,
+    t.updated_at,
+    t.deleted_at
+FROM
+    tenant.tenants AS t
+JOIN
+    tenant.tenant_users AS tu ON t.id = tu.tenant_id
+WHERE
+    tu.user_id = $1
+ORDER BY
+    t.created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetTenantsByUserIDParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+}
+
+func (q *Queries) GetTenantsByUserID(ctx context.Context, arg GetTenantsByUserIDParams) ([]TenantTenant, error) {
+	rows, err := q.db.Query(ctx, getTenantsByUserID, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TenantTenant{}
+	for rows.Next() {
+		var i TenantTenant
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantName,
+			&i.Domain,
+			&i.Email,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTenantsByUserId = `-- name: GetTenantsByUserId :many
+SELECT
+    t.id,
+    t.tenant_name,
+    t.domain,
+    t.email,
+    t.is_active,
+    t.created_at,
+    t.updated_at,
+    t.deleted_at
+FROM
+    tenant.tenants AS t
+JOIN
+    tenant.tenant_users AS tu ON t.id = tu.tenant_id
+WHERE
+    tu.user_id = $1
+ORDER BY
+    t.created_at DESC
+`
+
+func (q *Queries) GetTenantsByUserId(ctx context.Context, userID pgtype.UUID) ([]TenantTenant, error) {
+	rows, err := q.db.Query(ctx, getTenantsByUserId, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TenantTenant{}
+	for rows.Next() {
+		var i TenantTenant
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantName,
+			&i.Domain,
+			&i.Email,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllTenants = `-- name: ListAllTenants :many
 SELECT id, tenant_name, domain, email, is_active, created_at, updated_at, deleted_at FROM tenant.tenants
 ORDER BY created_at DESC
@@ -178,8 +314,8 @@ LIMIT $1 OFFSET $2
 `
 
 type ListAllTenantsParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListAllTenants(ctx context.Context, arg ListAllTenantsParams) ([]TenantTenant, error) {
@@ -188,7 +324,7 @@ func (q *Queries) ListAllTenants(ctx context.Context, arg ListAllTenantsParams) 
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TenantTenant
+	items := []TenantTenant{}
 	for rows.Next() {
 		var i TenantTenant
 		if err := rows.Scan(
@@ -219,8 +355,8 @@ LIMIT $1 OFFSET $2
 `
 
 type ListTenantsParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListTenants(ctx context.Context, arg ListTenantsParams) ([]TenantTenant, error) {
@@ -229,7 +365,7 @@ func (q *Queries) ListTenants(ctx context.Context, arg ListTenantsParams) ([]Ten
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TenantTenant
+	items := []TenantTenant{}
 	for rows.Next() {
 		var i TenantTenant
 		if err := rows.Scan(
@@ -275,21 +411,21 @@ LIMIT $2 OFFSET $3
 `
 
 type ListUsersForTenantParams struct {
-	TenantID pgtype.UUID
-	Limit    int32
-	Offset   int32
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Limit    int32       `json:"limit"`
+	Offset   int32       `json:"offset"`
 }
 
 type ListUsersForTenantRow struct {
-	ID         pgtype.UUID
-	Username   string
-	Email      string
-	Role       UserRole
-	IsActive   pgtype.Bool
-	IsVerified pgtype.Bool
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
-	DeletedAt  pgtype.Timestamptz
+	ID         pgtype.UUID        `json:"id"`
+	Username   string             `json:"username"`
+	Email      string             `json:"email"`
+	Role       UserRole           `json:"role"`
+	IsActive   pgtype.Bool        `json:"is_active"`
+	IsVerified pgtype.Bool        `json:"is_verified"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
 }
 
 func (q *Queries) ListUsersForTenant(ctx context.Context, arg ListUsersForTenantParams) ([]ListUsersForTenantRow, error) {
@@ -298,7 +434,7 @@ func (q *Queries) ListUsersForTenant(ctx context.Context, arg ListUsersForTenant
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListUsersForTenantRow
+	items := []ListUsersForTenantRow{}
 	for rows.Next() {
 		var i ListUsersForTenantRow
 		if err := rows.Scan(
@@ -328,8 +464,8 @@ WHERE tenant_id = $1 AND user_id = $2
 `
 
 type RemoveUserFromTenantParams struct {
-	TenantID pgtype.UUID
-	UserID   pgtype.UUID
+	TenantID pgtype.UUID `json:"tenant_id"`
+	UserID   pgtype.UUID `json:"user_id"`
 }
 
 func (q *Queries) RemoveUserFromTenant(ctx context.Context, arg RemoveUserFromTenantParams) error {
@@ -384,11 +520,11 @@ RETURNING id, tenant_name, domain, email, is_active, created_at, updated_at, del
 `
 
 type UpdateTenantParams struct {
-	ID         pgtype.UUID
-	TenantName string
-	Domain     string
-	IsActive   pgtype.Bool
-	Email      string
+	ID         pgtype.UUID `json:"id"`
+	TenantName string      `json:"tenant_name"`
+	Domain     string      `json:"domain"`
+	IsActive   pgtype.Bool `json:"is_active"`
+	Email      string      `json:"email"`
 }
 
 func (q *Queries) UpdateTenant(ctx context.Context, arg UpdateTenantParams) (TenantTenant, error) {

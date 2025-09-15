@@ -7,7 +7,7 @@ WHERE id = $1
 -- name: CreateUser :one
 INSERT INTO users (username, email, password, role)
 VALUES ($1, $2, $3, $4)
-RETURNING *;
+RETURNING id;
 
 -- name: UpdateUser :one
 UPDATE users
@@ -91,3 +91,29 @@ SET is_active  = TRUE,
 WHERE id = $1
   AND deleted_at IS NULL
 RETURNING *;
+
+
+-- name: GetTenantIdsByUserMail :one
+SELECT
+    u.id,
+    u.username,
+    u.password,
+    u.role,
+    COALESCE(array_agg(tu.tenant_id), '{}') AS tenant_ids
+FROM users AS u
+LEFT JOIN tenant.tenant_users AS tu ON u.id = tu.user_id
+WHERE u.email = $1
+GROUP BY u.id, u.username, u.password, u.role;
+
+-- name: GetUsersByRole :many
+SELECT 
+   id as id,
+   username,
+   email,
+   role,
+   is_active,
+   is_verified,
+   created_at
+FROM users
+WHERE role = $1 AND deleted_at IS NULL
+ORDER BY created_at DESC;

@@ -32,8 +32,8 @@ func (e *InvoiceInvoiceStatus) Scan(src interface{}) error {
 }
 
 type NullInvoiceInvoiceStatus struct {
-	InvoiceInvoiceStatus InvoiceInvoiceStatus
-	Valid                bool // Valid is true if InvoiceInvoiceStatus is not NULL
+	InvoiceInvoiceStatus InvoiceInvoiceStatus `json:"invoice_invoice_status"`
+	Valid                bool                 `json:"valid"` // Valid is true if InvoiceInvoiceStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -75,8 +75,8 @@ func (e *InvoicePaymentMethod) Scan(src interface{}) error {
 }
 
 type NullInvoicePaymentMethod struct {
-	InvoicePaymentMethod InvoicePaymentMethod
-	Valid                bool // Valid is true if InvoicePaymentMethod is not NULL
+	InvoicePaymentMethod InvoicePaymentMethod `json:"invoice_payment_method"`
+	Valid                bool                 `json:"valid"` // Valid is true if InvoicePaymentMethod is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -118,8 +118,8 @@ func (e *InvoicePaymentStatus) Scan(src interface{}) error {
 }
 
 type NullInvoicePaymentStatus struct {
-	InvoicePaymentStatus InvoicePaymentStatus
-	Valid                bool // Valid is true if InvoicePaymentStatus is not NULL
+	InvoicePaymentStatus InvoicePaymentStatus `json:"invoice_payment_status"`
+	Valid                bool                 `json:"valid"` // Valid is true if InvoicePaymentStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -163,8 +163,8 @@ func (e *TicketTicketPriority) Scan(src interface{}) error {
 }
 
 type NullTicketTicketPriority struct {
-	TicketTicketPriority TicketTicketPriority
-	Valid                bool // Valid is true if TicketTicketPriority is not NULL
+	TicketTicketPriority TicketTicketPriority `json:"ticket_ticket_priority"`
+	Valid                bool                 `json:"valid"` // Valid is true if TicketTicketPriority is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -208,8 +208,8 @@ func (e *TicketTicketStatus) Scan(src interface{}) error {
 }
 
 type NullTicketTicketStatus struct {
-	TicketTicketStatus TicketTicketStatus
-	Valid              bool // Valid is true if TicketTicketStatus is not NULL
+	TicketTicketStatus TicketTicketStatus `json:"ticket_ticket_status"`
+	Valid              bool               `json:"valid"` // Valid is true if TicketTicketStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -250,8 +250,8 @@ func (e *UserRole) Scan(src interface{}) error {
 }
 
 type NullUserRole struct {
-	UserRole UserRole
-	Valid    bool // Valid is true if UserRole is not NULL
+	UserRole UserRole `json:"user_role"`
+	Valid    bool     `json:"valid"` // Valid is true if UserRole is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -273,87 +273,88 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 }
 
 type Customer struct {
-	ID         pgtype.UUID
-	LastName   string
-	FirstName  string
-	Username   string
-	Email      pgtype.Text
-	Password   string
-	IsVerified pgtype.Bool
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
-	DeletedAt  pgtype.Timestamptz
+	ID         pgtype.UUID        `json:"id"`
+	LastName   string             `json:"last_name"`
+	FirstName  string             `json:"first_name"`
+	Username   string             `json:"username"`
+	Email      pgtype.Text        `json:"email"`
+	Password   string             `json:"password"`
+	IsVerified pgtype.Bool        `json:"is_verified"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type InvoiceInvoice struct {
-	ID        pgtype.UUID
-	TicketID  pgtype.UUID
-	Amount    pgtype.Numeric
-	Currency  string
-	Status    NullInvoiceInvoiceStatus
-	DueDate   pgtype.Date
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID        pgtype.UUID              `json:"id"`
+	TicketID  pgtype.UUID              `json:"ticket_id"`
+	Amount    pgtype.Numeric           `json:"amount"`
+	Currency  string                   `json:"currency"`
+	Status    NullInvoiceInvoiceStatus `json:"status"`
+	DueDate   pgtype.Date              `json:"due_date"`
+	CreatedAt pgtype.Timestamptz       `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz       `json:"updated_at"`
 }
 
 type InvoicePayment struct {
-	ID          pgtype.UUID
-	InvoiceID   pgtype.UUID
-	Amount      pgtype.Numeric
-	PaymentDate pgtype.Timestamptz
-	Method      NullInvoicePaymentMethod
-	Status      NullInvoicePaymentStatus
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID          pgtype.UUID              `json:"id"`
+	InvoiceID   pgtype.UUID              `json:"invoice_id"`
+	Amount      pgtype.Numeric           `json:"amount"`
+	PaymentDate pgtype.Timestamptz       `json:"payment_date"`
+	Method      NullInvoicePaymentMethod `json:"method"`
+	Status      NullInvoicePaymentStatus `json:"status"`
+	CreatedAt   pgtype.Timestamptz       `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz       `json:"updated_at"`
 }
 
 type TenantTenant struct {
-	ID         pgtype.UUID
-	TenantName string
-	Domain     string
-	Email      string
-	IsActive   pgtype.Bool
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
-	DeletedAt  pgtype.Timestamptz
+	ID         pgtype.UUID        `json:"id"`
+	TenantName string             `json:"tenant_name"`
+	Domain     string             `json:"domain"`
+	Email      string             `json:"email"`
+	IsActive   pgtype.Bool        `json:"is_active"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type TenantTenantUser struct {
-	TenantID pgtype.UUID
-	UserID   pgtype.UUID
+	TenantID pgtype.UUID `json:"tenant_id"`
+	UserID   pgtype.UUID `json:"user_id"`
 }
 
 type TicketComment struct {
-	ID        pgtype.UUID
-	TicketID  pgtype.UUID
-	Comment   string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID         pgtype.UUID        `json:"id"`
+	TicketID   pgtype.UUID        `json:"ticket_id"`
+	AuthorType string             `json:"author_type"`
+	AuthorID   pgtype.UUID        `json:"author_id"`
+	Comment    string             `json:"comment"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }
 
 type TicketTicket struct {
-	ID          pgtype.UUID
-	TenantID    pgtype.UUID
-	CustomerID  pgtype.UUID
-	AssignedTo  pgtype.UUID
-	Title       string
-	Description pgtype.Text
-	Status      NullTicketTicketStatus
-	Priority    NullTicketTicketPriority
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	ClosedAt    pgtype.Timestamptz
+	ID          pgtype.UUID        `json:"id"`
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	CustomerID  pgtype.UUID        `json:"customer_id"`
+	AssignedTo  pgtype.UUID        `json:"assigned_to"`
+	Title       string             `json:"title"`
+	Description pgtype.Text        `json:"description"`
+	Status      string             `json:"status"`
+	Priority    string             `json:"priority"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ClosedAt    pgtype.Timestamptz `json:"closed_at"`
 }
 
 type User struct {
-	ID         pgtype.UUID
-	Username   string
-	Email      string
-	Password   string
-	Role       UserRole
-	IsActive   pgtype.Bool
-	IsVerified pgtype.Bool
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
-	DeletedAt  pgtype.Timestamptz
+	ID         pgtype.UUID        `json:"id"`
+	Username   string             `json:"username"`
+	Email      string             `json:"email"`
+	Password   string             `json:"password"`
+	Role       UserRole           `json:"role"`
+	IsActive   pgtype.Bool        `json:"is_active"`
+	IsVerified pgtype.Bool        `json:"is_verified"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
 }

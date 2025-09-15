@@ -1,0 +1,103 @@
+2025/09/11 16:41:39 pdf.go:49: ENQUEUE: Starting to enqueue PDF invoice job for user a1b2c3d4-e5f6-7890-1234-567890abcdef, amount $100.50
+2025/09/11 16:41:39 pdf.go:71: ENQUEUE_SUCCESS: Successfully enqueued PDF invoice job for user a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 16:46:14 pdf.go:58: ENQUEUE: Starting to enqueue PDF invoice job for user a1b2c3d4-e5f6-7890-1234-567890abcdef, amount $100.50
+2025/09/11 16:46:14 pdf.go:80: ENQUEUE_SUCCESS: Successfully enqueued PDF invoice job for user a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 1.501718ms
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 2.283583ms
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 1.694921ms
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 1.380473ms
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 811.166µs
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 538.98µs
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket= amount=100.50
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 1.588478ms
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 2.040115ms
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/.pdf for ticket  in 1.916639ms
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:19:26 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:26+03:00
+2025/09/11 17:19:26 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 779.675µs
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 984.525µs
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 923.08µs
+2025/09/11 17:19:26 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 926.035µs
+2025/09/11 17:19:31 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:19:31 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:19:32 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:19:32+03:00
+2025/09/11 17:19:32 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:19:32 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 798.506µs
+2025/09/11 17:25:59 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:25:59 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:25:59 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:25:59+03:00
+2025/09/11 17:25:59 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:25:59 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 1.144769ms
+2025/09/11 17:27:10 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:27:10 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:27:10 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:27:10+03:00
+2025/09/11 17:27:10 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:27:10 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 837.696µs
+2025/09/11 17:27:46 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:27:46 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:27:46 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:27:46+03:00
+2025/09/11 17:27:46 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:27:46 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 1.651379ms
+2025/09/11 17:27:59 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:27:59 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:28:00 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:28:00+03:00
+2025/09/11 17:28:00 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:28:00 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 472.853µs
+2025/09/11 17:28:02 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:28:02 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:28:03 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:28:03+03:00
+2025/09/11 17:28:03 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:28:03 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 793.623µs
+2025/09/11 17:28:04 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:28:04 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:28:04 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:28:04+03:00
+2025/09/11 17:28:04 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:28:04 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 655.385µs
+2025/09/11 17:28:17 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:28:17 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:28:17 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:28:17+03:00
+2025/09/11 17:28:17 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:28:17 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 851.431µs
+2025/09/11 17:29:12 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:29:12 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:29:13 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:29:13+03:00
+2025/09/11 17:29:13 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:29:13 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 806.065µs
+2025/09/11 17:30:18 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:30:18 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:30:19 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:30:19+03:00
+2025/09/11 17:30:19 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:30:19 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 730.105µs
+2025/09/11 17:30:36 pdf.go:61: ENQUEUE: Enqueue PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:30:36 pdf.go:82: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef
+2025/09/11 17:30:36 pdf.go:90: TASK_START: pdf:invoice at 2025-09-11T17:30:36+03:00
+2025/09/11 17:30:36 pdf.go:102: TASK_PROCESSING: ticket=a1b2c3d4-e5f6-7890-1234-567890abcdef amount=100.50
+2025/09/11 17:30:36 pdf.go:132: TASK_SUCCESS: generated invoice invoices/a1b2c3d4-e5f6-7890-1234-567890abcdef.pdf for ticket a1b2c3d4-e5f6-7890-1234-567890abcdef in 877.618µs
+2025/09/11 18:30:05 pdf.go:58: ENQUEUE: Enqueue PDF invoice job for ticket e70b44d1-eeff-4210-b2e7-b40899eb2465 amount=100.50
+2025/09/11 18:30:05 pdf.go:79: ENQUEUE_SUCCESS: enqueued PDF invoice job for ticket e70b44d1-eeff-4210-b2e7-b40899eb2465
+2025/09/11 18:30:06 pdf.go:87: TASK_START: pdf:invoice at 2025-09-11T18:30:06+03:00
+2025/09/11 18:30:06 pdf.go:99: TASK_PROCESSING: ticket=e70b44d1-eeff-4210-b2e7-b40899eb2465 amount=100.50
+2025/09/11 18:30:06 pdf.go:129: TASK_SUCCESS: generated invoice invoices/e70b44d1-eeff-4210-b2e7-b40899eb2465.pdf for ticket e70b44d1-eeff-4210-b2e7-b40899eb2465 in 1.020122ms
